@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block title %}Quiz — Q{{ q_number }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-6 py-10" x-data="quizQuestion()" x-init="init()">
+
+  <!-- Breadcrumb -->
+  <div class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+    <a href="/quiz" class="hover:text-neon-purple transition">🧠 Quiz</a>
+    <span>›</span>
+    <span class="text-gray-300">Question {{ q_number }} of {{ q_total }}</span>
+  </div>
+
+  <!-- Progress mini bar -->
+  <div class="h-1.5 bg-space-600 rounded-full mb-8 overflow-hidden">
+    <div class="h-full bg-gradient-to-r from-neon-purple to-neon-blue rounded-full transition-all"
+         style="width: {{ ((q_number) / q_total * 100) | round | int }}%"></div>
+  </div>
+
+  <!-- Category badge -->
+  <div class="mb-4">
+    <span class="text-xs px-3 py-1 rounded-full font-semibold bg-neon-purple/20 text-neon-purple border border-neon-purple/30">
+      {{ question.category }}
+    </span>
+  </div>
+
+  <!-- Question card -->
+  <div class="glass rounded-3xl border {% if attempt %}{% if attempt.is_correct %}border-neon-green/60{% else %}border-red-500/60{% endif %}{% else %}border-white/10{% endif %} p-8 mb-6 shadow-xl">
+
+    <!-- Points badge -->
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl">🎯</span>
+        <span class="font-black text-neon-purple text-xl">+{{ question.points }}</span>
+        <span class="text-gray-400 text-sm">points</span>
+      </div>
+      {% if attempt %}
+        {% if attempt.is_correct %}
+        <div class="flex items-center gap-2 bg-neon-green/20 border border-neon-green/40 rounded-full px-4 py-1.5">
+          <span>✅</span>
+          <span class="text-neon-green font-bold text-sm">Correct! +{{ attempt.points_awarded }} pts</span>
+        </div>
+        {% else %}
+        <div class="flex items-center gap-2 bg-red-900/30 border border-red-500/40 rounded-full px-4 py-1.5">
+          <span>❌</span>
+          <span class="text-red-400 font-bold text-sm">Wrong answer</span>
+        </div>
+        {% endif %}
+      {% endif %}
+    </div>
+
+    <!-- Question text -->
+    <h2 class="text-xl font-bold text-white leading-relaxed mb-8">
+      {{ question.question }}
+    </h2>
+
+    <!-- Joke / hint (shown before answering) -->
+    {% if question.joke_hint and not attempt %}
+    <div class="mb-6 bg-yellow-900/20 border border-yellow-500/30 rounded-xl p-4 flex items-start gap-3">
+      <span class="text-2xl flex-shrink-0">💡</span>
+      <p class="text-yellow-200/80 text-sm italic">{{ question.joke_hint }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Answer options (form if not answered yet) -->
+    {% if not attempt %}
+    <form method="post" action="/quiz/{{ question.id }}/answer" x-ref="form">
+      <div class="space-y-3">
+        {% for letter, text in [('a', question.option_a), ('b', question.option_b), ('c', question.option_c), ('d', question.option_d)] %}
+        <label class="quiz-option flex items-center gap-4 glass rounded-xl border border-white/10 p-4 cursor-pointer
+                       hover:border-neon-purple/60 hover:bg-neon-purple/5 transition-all duration-150 group"
+               :class="selected === '{{ letter }}' ? 'border-neon-purple bg-neon-purple/10' : ''">
+          <input type="radio" name="answer" value="{{ letter }}"
+                 x-model="selected"
+                 class="sr-only">
+          <div class="w-9 h-9 flex-shrink-0 rounded-full border-2 flex items-center justify-center font-black text-sm transition-all
+                      group-hover:border-neon-purple"
+               :class="selected === '{{ letter }}' ? 'border-neon-purple bg-neon-purple/30 text-neon-purple' : 'border-white/20 text-gray-400'">
+            {{ letter | upper }}
+          </div>
+          <span class="text-white/90 font-medium">{{ text }}</span>
+        </label>
+        {% endfor %}
+      </div>
+
+      <button type="submit"
+              :disabled="!selected"
+              :class="selected ? 'bg-neon-purple hover:bg-purple-500 cursor-pointer' : 'bg-gray-700 cursor-not-allowed opacity-50'"
+              class="mt-6 w-full py-3 rounded-xl font-black text-white text-lg transition-all duration-200 shadow-lg">
+        🚀 Submit Answer
+      </button>
+    </form>
+
+    {% else %}
+    <!-- Show answered state with correct highlighted -->
+    <div class="space-y-3">
+      {% for letter, text in [('a', question.option_a), ('b', question.option_b), ('c', question.option_c), ('d', question.option_d)] %}
+      {% set is_correct_opt = (letter == question.correct) %}
+      {% set was_chosen = (letter == attempt.chosen) %}
+      <div class="flex items-center gap-4 rounded-xl border p-4
+                  {% if is_correct_opt %}border-neon-green/60 bg-neon-green/10
+                  {% elif was_chosen and not is_correct_opt %}border-red-500/60 bg-red-900/10
+                  {% else %}border-white/10 opacity-50{% endif %}">
+        <div class="w-9 h-9 flex-shrink-0 rounded-full border-2 flex items-center justify-center font-black text-sm
+                    {% if is_correct_opt %}border-neon-green text-neon-green
+                    {% elif was_chosen %}border-red-500 text-red-400
+                    {% else %}border-white/20 text-gray-500{% endif %}">
+          {{ letter | upper }}
+        </div>
+        <span class="font-medium
+              {% if is_correct_opt %}text-neon-green
+              {% elif was_chosen %}text-red-400
+              {% else %}text-gray-500{% endif %}">{{ text }}</span>
+        {% if is_correct_opt %}<span class="ml-auto text-neon-green">✓ Correct</span>{% endif %}
+        {% if was_chosen and not is_correct_opt %}<span class="ml-auto text-red-400">← Your answer</span>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Explanation -->
+    {% if question.explanation %}
+    <div class="mt-6 bg-indigo-900/30 border border-indigo-500/40 rounded-xl p-5">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-xl">🔭</span>
+        <span class="font-bold text-indigo-300">Explanation</span>
+      </div>
+      <p class="text-indigo-100/80 text-sm leading-relaxed">{{ question.explanation }}</p>
+    </div>
+    {% endif %}
+
+    {% endif %}
+  </div>
+
+  <!-- Navigation -->
+  <div class="flex items-center justify-between">
+    {% if prev_id %}
+    <a href="/quiz/{{ prev_id }}" class="flex items-center gap-2 glass px-5 py-2.5 rounded-xl border border-white/10 hover:border-neon-purple/50 text-gray-300 hover:text-white transition text-sm font-semibold">
+      ← Previous
+    </a>
+    {% else %}
+    <div></div>
+    {% endif %}
+
+    <a href="/quiz" class="text-gray-500 hover:text-gray-300 text-sm transition">All questions</a>
+
+    {% if next_id %}
+    <a href="/quiz/{{ next_id }}" class="flex items-center gap-2 glass px-5 py-2.5 rounded-xl border border-white/10 hover:border-neon-purple/50 text-gray-300 hover:text-white transition text-sm font-semibold">
+      Next →
+    </a>
+    {% else %}
+    <a href="/quiz" class="flex items-center gap-2 bg-neon-purple/20 border border-neon-purple/40 px-5 py-2.5 rounded-xl text-neon-purple hover:bg-neon-purple/30 transition text-sm font-semibold">
+      🏁 Finish Quiz
+    </a>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function quizQuestion() {
+  return {
+    selected: '',
+    init() {}
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Live Leaderboard — Space Mission{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-6 py-8" x-data="leaderboard()" x-init="init()">
+
+  <!-- Header -->
+  <div class="text-center mb-10">
+    <div class="text-7xl mb-3 rocket-float inline-block">🏆</div>
+    <h1 class="text-5xl font-black text-white">MISSION RANKINGS</h1>
+    <p class="text-gray-400 mt-2 flex items-center justify-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse inline-block"></span>
+      Live — updates in real time
+    </p>
+  </div>
+
+  <!-- Leaderboard table -->
+  <div class="glass rounded-2xl border border-white/10 overflow-hidden">
+    <div class="grid grid-cols-12 text-xs font-bold uppercase tracking-widest text-gray-500 px-6 py-3 border-b border-white/10">
+      <div class="col-span-1">#</div>
+      <div class="col-span-4">Team</div>
+      <div class="col-span-3 text-right">Fuel (Score)</div>
+      <div class="col-span-4 text-right">Badges</div>
+    </div>
+
+    <div id="leaderboard-body">
+      {% for entry in leaderboard %}
+      <div class="grid grid-cols-12 items-center px-6 py-4 border-b border-white/5 transition-all
+                  {% if team and entry.id == team.id %}bg-indigo-900/20{% endif %}
+                  hover:bg-white/5"
+           id="team-row-{{ entry.id }}">
+
+        <!-- Rank -->
+        <div class="col-span-1">
+          <span class="text-2xl font-black
+            {% if entry.rank == 1 %}rank-1
+            {% elif entry.rank == 2 %}rank-2
+            {% elif entry.rank == 3 %}rank-3
+            {% else %}text-gray-500{% endif %}">
+            {% if entry.rank == 1 %}🥇
+            {% elif entry.rank == 2 %}🥈
+            {% elif entry.rank == 3 %}🥉
+            {% else %}{{ entry.rank }}{% endif %}
+          </span>
+        </div>
+
+        <!-- Team -->
+        <div class="col-span-4 flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full bg-gradient-to-br
+                      {% if loop.index0 % 4 == 0 %}from-indigo-500 to-purple-600
+                      {% elif loop.index0 % 4 == 1 %}from-green-500 to-teal-600
+                      {% elif loop.index0 % 4 == 2 %}from-orange-500 to-red-600
+                      {% else %}from-pink-500 to-rose-600{% endif %}
+                      flex items-center justify-center font-black text-sm">
+            {{ entry.name[0].upper() }}
+          </div>
+          <div>
+            <div class="font-bold text-white flex items-center gap-2">
+              {{ entry.name }}
+              {% if team and entry.id == team.id %}
+              <span class="text-xs bg-indigo-600/50 text-indigo-300 px-1.5 py-0.5 rounded">YOU</span>
+              {% endif %}
+              {% if entry.is_frozen %}
+              <span class="text-xs text-blue-400">🥶</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Score -->
+        <div class="col-span-3 text-right">
+          <div class="font-black text-xl text-yellow-300" id="score-{{ entry.id }}">{{ entry.score }}</div>
+          <div class="text-xs text-gray-500">fuel units</div>
+          <!-- Fuel bar -->
+          <div class="mt-1 h-1 bg-space-600 rounded-full overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-yellow-500 to-orange-400 rounded-full"
+                 style="width: {{ [entry.score / 10, 100] | min }}%"></div>
+          </div>
+        </div>
+
+        <!-- Badges -->
+        <div class="col-span-4 flex items-center justify-end gap-1 flex-wrap">
+          {% for badge in entry.badges %}
+          <span class="text-lg" title="{{ badge.name }}">{{ badge.icon }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Auto-refresh notice -->
+  <p class="text-center text-gray-600 text-xs mt-6">
+    Leaderboard updates automatically via WebSocket connection.
+  </p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function leaderboard() {
+  return {
+    ws: null,
+    init() {
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      this.ws = new SpaceSocket(`${proto}://${location.host}/ws/leaderboard`, {
+        leaderboard: (d) => this.updateBoard(d.data),
+        event: (d) => showEventBanner(d.title, d.description),
+        event_end: (d) => showToast(d.message, 'info'),
+      });
+    },
+
+    updateBoard(data) {
+      const body = document.getElementById('leaderboard-body');
+      if (!body) return;
+
+      // Flash changed scores
+      data.forEach(entry => {
+        const scoreEl = document.getElementById(`score-${entry.id}`);
+        if (scoreEl && scoreEl.textContent != entry.score) {
+          flashScore(scoreEl);
+          scoreEl.textContent = entry.score;
+        }
+      });
+
+      // Re-sort rows by new rank
+      const rows = data.map(entry => {
+        const row = document.getElementById(`team-row-${entry.id}`);
+        if (row) {
+          const scoreEl = row.querySelector(`#score-${entry.id}`);
+          if (scoreEl) scoreEl.textContent = entry.score;
+        }
+        return row;
+      }).filter(Boolean);
+
+      rows.forEach(row => body.appendChild(row));
+    }
+  }
+}
+</script>
+{% endblock %}

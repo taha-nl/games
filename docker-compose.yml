@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8001:8000"
+    volumes:
+      - db_data:/data
+    environment:
+      - DATABASE_URL=sqlite:////data/space_mission.db
+    restart: unless-stopped
+
+volumes:
+  db_data:

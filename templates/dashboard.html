@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% block title %}Mission Dashboard — {{ team.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-8" x-data="dashboard()" x-init="init()">
+
+  <!-- Active event banner -->
+  {% if active_event %}
+  <div class="mb-6 bg-gradient-to-r from-yellow-900/60 to-orange-900/60 border border-yellow-500/40 rounded-2xl p-4 flex items-center gap-4">
+    <span class="text-4xl">⚡</span>
+    <div>
+      <div class="font-bold text-yellow-300 text-lg">{{ active_event.title }}</div>
+      <div class="text-yellow-200/70 text-sm">{{ active_event.description }}</div>
+    </div>
+    {% if active_event.multiplier > 1 %}
+    <div class="ml-auto text-2xl font-black text-yellow-300">×{{ active_event.multiplier }}</div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Frozen warning -->
+  {% if team.is_frozen %}
+  <div class="mb-6 frozen-card bg-blue-900/40 border-2 border-blue-400 rounded-2xl p-4 flex items-center gap-4">
+    <span class="text-4xl">🥶</span>
+    <div>
+      <div class="font-bold text-blue-300 text-lg">TEAM FROZEN!</div>
+      <div class="text-blue-200/70 text-sm">Submissions are blocked until {{ team.frozen_until.strftime('%H:%M:%S') if team.frozen_until else 'soon' }}.</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-4xl font-black text-white">
+        <span class="text-neon-green">{{ team.name }}</span> Mission
+      </h1>
+      <p class="text-gray-400 mt-1">Your spaceship is ready. Conquer the planets!</p>
+    </div>
+    <div class="text-6xl rocket-float">🛸</div>
+  </div>
+
+  <!-- Stats grid -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <!-- Score/Fuel -->
+    <div class="glass rounded-2xl p-5 border border-yellow-500/30">
+      <div class="text-3xl mb-2">⚡</div>
+      <div class="text-3xl font-black text-yellow-300" id="score-display">{{ team.score }}</div>
+      <div class="text-gray-400 text-sm font-semibold uppercase tracking-wide mt-1">Fuel Units</div>
+      <div class="mt-3 h-1.5 bg-space-600 rounded-full overflow-hidden">
+        <div class="h-full bg-gradient-to-r from-yellow-500 to-orange-400 rounded-full progress-bar"
+             style="width: {{ [team.score / 10, 100] | min }}%"></div>
+      </div>
+    </div>
+
+    <!-- Rank -->
+    <div class="glass rounded-2xl p-5 border border-purple-500/30">
+      <div class="text-3xl mb-2">🏆</div>
+      <div class="text-3xl font-black
+        {% if rank == 1 %}rank-1{% elif rank == 2 %}rank-2{% elif rank == 3 %}rank-3{% else %}text-purple-300{% endif %}">
+        #{{ rank }}
+      </div>
+      <div class="text-gray-400 text-sm font-semibold uppercase tracking-wide mt-1">Mission Rank</div>
+    </div>
+
+    <!-- Coins -->
+    <div class="glass rounded-2xl p-5 border border-amber-500/30">
+      <div class="text-3xl mb-2">🪙</div>
+      <div class="text-3xl font-black text-amber-300">{{ team.coins }}</div>
+      <div class="text-gray-400 text-sm font-semibold uppercase tracking-wide mt-1">Space Coins</div>
+    </div>
+
+    <!-- Challenges solved -->
+    <div class="glass rounded-2xl p-5 border border-green-500/30">
+      <div class="text-3xl mb-2">🪐</div>
+      <div class="text-3xl font-black text-green-300">{{ approved_ids | length }}</div>
+      <div class="text-gray-400 text-sm font-semibold uppercase tracking-wide mt-1">Planets Conquered</div>
+      {% if pending_count > 0 %}
+      <div class="text-xs text-yellow-400 mt-1">{{ pending_count }} pending review</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Planets (left 2/3) -->
+    <div class="lg:col-span-2">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold text-white">🪐 Available Planets</h2>
+        <a href="/challenges" class="text-indigo-400 hover:text-indigo-300 text-sm transition">View all →</a>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {% for challenge in challenges[:4] %}
+        {% set solved = challenge.id in approved_ids %}
+        <a href="/challenge/{{ challenge.id }}"
+           class="planet-card glass rounded-xl p-4 border transition-all duration-200
+                  {% if solved %}border-green-500/50 bg-green-900/20
+                  {% else %}border-white/10 hover:border-indigo-400/50{% endif %}
+                  block">
+          <div class="flex items-start justify-between">
+            <div class="text-3xl mb-2">
+              {% if challenge.difficulty == 'easy' %}🟢
+              {% elif challenge.difficulty == 'medium' %}🟡
+              {% else %}🔴{% endif %}
+            </div>
+            {% if solved %}
+            <span class="text-green-400 font-bold text-lg">✓</span>
+            {% else %}
+            <span class="text-yellow-300 font-bold text-sm">+{{ challenge.points }}</span>
+            {% endif %}
+          </div>
+          <div class="font-bold text-white text-sm">{{ challenge.title }}</div>
+          <div class="text-gray-400 text-xs mt-0.5">{{ challenge.planet_name }}</div>
+          <div class="mt-2">
+            <span class="text-xs px-2 py-0.5 rounded-full font-semibold
+              {% if challenge.difficulty == 'easy' %}bg-green-900/50 text-green-300
+              {% elif challenge.difficulty == 'medium' %}bg-yellow-900/50 text-yellow-300
+              {% else %}bg-red-900/50 text-red-300{% endif %}">
+              {{ challenge.difficulty | upper }}
+            </span>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+
+      {% if challenges | length > 4 %}
+      <a href="/challenges" class="mt-3 block text-center text-indigo-400 hover:text-indigo-300 text-sm py-2">
+        + {{ challenges | length - 4 }} more planets →
+      </a>
+      {% endif %}
+    </div>
+
+    <!-- Right panel -->
+    <div class="space-y-5">
+
+      <!-- Achievements -->
+      <div class="glass rounded-2xl p-5 border border-white/10">
+        <h3 class="font-bold text-white mb-3 flex items-center gap-2">
+          <span>🏅</span> Achievements
+        </h3>
+        {% if achievements %}
+        <div class="flex flex-wrap gap-2">
+          {% for ach in achievements %}
+          <div class="group relative">
+            <div class="w-10 h-10 rounded-full bg-space-600 border border-yellow-500/40 flex items-center justify-center text-xl cursor-help
+                        hover:border-yellow-400 transition">
+              {{ ach.badge_icon }}
+            </div>
+            <div class="absolute bottom-12 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-lg px-2 py-1 whitespace-nowrap
+                        opacity-0 group-hover:opacity-100 transition pointer-events-none z-10 border border-white/20">
+              {{ ach.badge_name }}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-sm">No achievements yet. Keep solving! 💪</p>
+        {% endif %}
+      </div>
+
+      <!-- Cards inventory -->
+      <div class="glass rounded-2xl p-5 border border-white/10">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-bold text-white flex items-center gap-2"><span>🃏</span> Power Cards</h3>
+          <a href="/cards/shop" class="text-indigo-400 hover:text-indigo-300 text-xs transition">Shop →</a>
+        </div>
+        {% if team_cards %}
+        <div class="space-y-2">
+          {% for tc in team_cards %}
+          <div class="flex items-center justify-between bg-space-600/50 rounded-lg px-3 py-2">
+            <div class="flex items-center gap-2">
+              <span>{{ tc.card.icon }}</span>
+              <span class="text-sm font-semibold">{{ tc.card.name }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs bg-space-500 px-2 py-0.5 rounded-full text-gray-300">×{{ tc.quantity }}</span>
+              <form method="post" action="/cards/use/{{ tc.id }}" class="inline">
+                <button type="submit" class="text-xs bg-indigo-600 hover:bg-indigo-500 px-2 py-0.5 rounded transition">USE</button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-sm">No cards. <a href="/cards/shop" class="text-indigo-400">Visit the shop!</a></p>
+        {% endif %}
+      </div>
+
+      <!-- Quick links -->
+      <div class="glass rounded-2xl p-5 border border-white/10">
+        <h3 class="font-bold text-white mb-3">🚀 Quick Actions</h3>
+        <div class="space-y-2">
+          <a href="/leaderboard" class="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition py-1">
+            <span>🏆</span> Live Leaderboard
+          </a>
+          <a href="/challenges" class="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition py-1">
+            <span>🪐</span> All Challenges
+          </a>
+          <a href="/cards/shop" class="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition py-1">
+            <span>🃏</span> Card Shop
+          </a>
+          <a href="/quiz" class="flex items-center gap-2 text-sm text-neon-purple/80 hover:text-neon-purple transition py-1 font-semibold">
+            <span>🧠</span> Algorithm Quiz
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function dashboard() {
+  return {
+    ws: null,
+    init() {
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      this.ws = new SpaceSocket(`${proto}://${location.host}/ws/leaderboard`, {
+        score_update: (d) => {
+          const el = document.getElementById('score-display');
+          if (el) { el.textContent = parseInt(el.textContent) + d.points; flashScore(el); }
+          showToast(d.message, 'success');
+        },
+        rejection: (d) => showToast(d.message, 'error', 8000),
+        hint: (d) => showToast(d.message, 'info', 10000),
+        freeze: (d) => { showToast(d.message, 'freeze', 10000); location.reload(); },
+        card_effect: (d) => showToast(d.message, 'success'),
+        event: (d) => showEventBanner(d.title, d.description),
+      });
+    }
+  }
+}
+</script>
+{% endblock %}

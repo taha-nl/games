@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Algorithm Quiz 🧠{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-6 py-10">
+
+  <!-- Header -->
+  <div class="text-center mb-10">
+    <div class="text-6xl mb-4 animate-bounce">🧠</div>
+    <h1 class="text-5xl font-black text-white mb-3">
+      <span class="text-neon-purple">Algorithm</span> Quiz
+    </h1>
+    <p class="text-gray-400 text-lg">Think like a machine — test your knowledge from Day 2!</p>
+
+    <!-- Score badge -->
+    <div class="inline-flex items-center gap-3 mt-6 glass rounded-full px-6 py-3 border border-neon-purple/30">
+      <span class="text-2xl">⚡</span>
+      <span class="text-neon-purple font-black text-2xl">{{ total_pts }}</span>
+      <span class="text-gray-400">quiz points earned</span>
+      <span class="mx-2 text-gray-600">·</span>
+      <span class="text-neon-green font-bold">{{ correct_ids | length }}</span>
+      <span class="text-gray-400">/ {{ questions | length }} correct</span>
+    </div>
+  </div>
+
+  <!-- Progress bar -->
+  {% if questions %}
+  <div class="mb-8">
+    <div class="flex justify-between text-xs text-gray-400 mb-1">
+      <span>Progress</span>
+      <span>{{ correct_ids | length }} / {{ questions | length }}</span>
+    </div>
+    <div class="h-3 bg-space-600 rounded-full overflow-hidden">
+      <div class="h-full bg-gradient-to-r from-neon-purple to-neon-blue rounded-full transition-all duration-700"
+           style="width: {{ ((correct_ids | length) / (questions | length) * 100) | round | int }}%"></div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Category filters + grid share one Alpine scope -->
+  <div x-data="{ active: 'All' }">
+  <div class="flex flex-wrap gap-2 mb-8 justify-center">
+    <button @click="active = 'All'"
+            :class="active === 'All' ? 'bg-neon-purple/30 border-neon-purple text-neon-purple' : 'border-white/10 text-gray-400 hover:border-white/30'"
+            class="px-4 py-1.5 rounded-full border text-sm font-semibold transition">All</button>
+    {% for cat in categories %}
+    <button @click="active = '{{ cat }}'"
+            :class="active === '{{ cat }}' ? 'bg-neon-blue/30 border-neon-blue text-neon-blue' : 'border-white/10 text-gray-400 hover:border-white/30'"
+            class="px-4 py-1.5 rounded-full border text-sm font-semibold transition">{{ cat }}</button>
+    {% endfor %}
+  </div>
+
+  <!-- Question cards grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for q in questions %}
+    {% set solved = q.id in correct_ids %}
+    {% set tried = q.id in answered_ids %}
+    <a href="/quiz/{{ q.id }}"
+       x-show="active === 'All' || active === '{{ q.category }}'"
+       class="quiz-card glass rounded-2xl p-5 border transition-all duration-200 block group
+              {% if solved %}border-neon-green/50 bg-green-900/10
+              {% elif tried %}border-red-500/40 bg-red-900/10
+              {% else %}border-white/10 hover:border-neon-purple/50{% endif %}">
+
+      <div class="flex items-start justify-between mb-3">
+        <span class="text-xs px-2 py-0.5 rounded-full font-semibold bg-space-600 text-gray-300 border border-white/10">
+          {{ q.category }}
+        </span>
+        <span class="text-xl">
+          {% if solved %}✅
+          {% elif tried %}❌
+          {% else %}🔒{% endif %}
+        </span>
+      </div>
+
+      <p class="text-white font-semibold text-sm leading-snug group-hover:text-neon-purple transition line-clamp-3">
+        {{ q.question }}
+      </p>
+
+      <div class="mt-4 flex items-center justify-between">
+        <span class="text-xs text-gray-500">+{{ q.points }} pts</span>
+        {% if solved %}
+        <span class="text-xs text-neon-green font-bold">✓ Correct!</span>
+        {% elif tried %}
+        <span class="text-xs text-red-400 font-bold">Try again →</span>
+        {% else %}
+        <span class="text-xs text-indigo-400 group-hover:text-neon-purple transition">Answer →</span>
+        {% endif %}
+      </div>
+    </a>
+    {% else %}
+    <div class="col-span-3 text-center text-gray-500 py-16">
+      <div class="text-5xl mb-4">🌌</div>
+      <p>No quiz questions yet. Check back soon!</p>
+    </div>
+    {% endfor %}
+  </div>
+  </div><!-- end x-data filter scope -->
+
+</div>
+{% endblock %}

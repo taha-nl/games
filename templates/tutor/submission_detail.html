@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block title %}Review Submission — {{ submission.team.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-6 py-8">
+
+  <!-- Breadcrumb -->
+  <div class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+    <a href="/tutor/submissions" class="hover:text-gray-300 transition">📋 Submissions</a>
+    <span>›</span>
+    <span class="text-white">{{ submission.team.name }} — {{ submission.challenge.title }}</span>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+    <!-- Code view (left 3/5) -->
+    <div class="lg:col-span-3">
+      <div class="glass rounded-2xl border border-indigo-500/30 overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+            <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+            <span class="text-xs text-gray-500 ml-2">{{ submission.team.name }}/solution.py</span>
+          </div>
+          <span class="text-xs
+            {% if submission.status.value == 'pending' %}text-yellow-400
+            {% elif submission.status.value == 'approved' %}text-green-400
+            {% else %}text-red-400{% endif %}">
+            {{ submission.status.value | upper }}
+          </span>
+        </div>
+        <div id="code-viewer" style="height: 500px;"></div>
+      </div>
+    </div>
+
+    <!-- Review panel (right 2/5) -->
+    <div class="lg:col-span-2 space-y-4">
+
+      <!-- Submission info -->
+      <div class="glass rounded-2xl p-5 border border-white/10">
+        <h3 class="font-bold text-white mb-3">📋 Submission Info</h3>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-400">Team:</span>
+            <span class="font-semibold text-white">{{ submission.team.name }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-400">Challenge:</span>
+            <span class="font-semibold text-indigo-300">{{ submission.challenge.title }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-400">Difficulty:</span>
+            <span class="font-semibold
+              {% if submission.challenge.difficulty == 'easy' %}text-green-300
+              {% elif submission.challenge.difficulty == 'medium' %}text-yellow-300
+              {% else %}text-red-300{% endif %}">
+              {{ submission.challenge.difficulty | upper }}
+            </span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-400">Base Points:</span>
+            <span class="font-bold text-yellow-300">{{ submission.challenge.points }} fuel</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-400">Submitted:</span>
+            <span class="text-gray-300">{{ submission.submitted_at.strftime('%H:%M:%S') }}</span>
+          </div>
+          {% if submission.team.double_points_active %}
+          <div class="text-yellow-400 text-xs font-bold mt-2">⚡ DOUBLE POINTS ACTIVE!</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Challenge description -->
+      <div class="glass rounded-2xl p-5 border border-white/10">
+        <h3 class="font-bold text-white mb-2">📄 Challenge</h3>
+        <p class="text-gray-400 text-xs leading-relaxed">{{ submission.challenge.description[:300] }}...</p>
+        {% if submission.challenge.examples %}
+        <pre class="mt-2 text-green-300 text-xs bg-space-800 rounded-lg p-2 overflow-auto">{{ submission.challenge.examples }}</pre>
+        {% endif %}
+      </div>
+
+      {% if submission.status.value == 'pending' %}
+      <!-- Approve form -->
+      <form method="post" action="/tutor/submission/{{ submission.id }}/approve">
+        <div class="glass rounded-2xl p-5 border border-green-500/30">
+          <h3 class="font-bold text-green-400 mb-3">✅ Approve Submission</h3>
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs text-gray-400">Bonus Points (optional)</label>
+              <input type="number" name="bonus_points" value="0" min="0"
+                class="w-full mt-1 bg-space-700 border border-white/20 rounded-lg px-3 py-2 text-white text-sm
+                       focus:outline-none focus:border-green-400 transition">
+            </div>
+            <div>
+              <label class="text-xs text-gray-400">Comment (optional)</label>
+              <textarea name="comment" rows="2" placeholder="Great solution! Well done!"
+                class="w-full mt-1 bg-space-700 border border-white/20 rounded-lg px-3 py-2 text-white text-sm
+                       focus:outline-none focus:border-green-400 transition resize-none"></textarea>
+            </div>
+            <button type="submit"
+              class="w-full bg-green-700 hover:bg-green-600 text-white font-bold py-2.5 rounded-xl transition active:scale-95">
+              ✅ Approve & Award Points
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <!-- Reject form -->
+      <form method="post" action="/tutor/submission/{{ submission.id }}/reject">
+        <div class="glass rounded-2xl p-5 border border-red-500/30">
+          <h3 class="font-bold text-red-400 mb-3">❌ Request Revision</h3>
+          <textarea name="comment" rows="2" required placeholder="Explain what needs to be fixed..."
+            class="w-full bg-space-700 border border-white/20 rounded-lg px-3 py-2 text-white text-sm
+                   focus:outline-none focus:border-red-400 transition resize-none mb-3"></textarea>
+          <button type="submit"
+            class="w-full bg-red-800 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition active:scale-95">
+            ❌ Reject — Needs Revision
+          </button>
+        </div>
+      </form>
+
+      <!-- Send hint -->
+      <div class="glass rounded-2xl p-5 border border-yellow-500/20">
+        <h3 class="font-bold text-yellow-400 mb-3">💡 Send Hint</h3>
+        <div class="flex gap-2">
+          <input type="text" id="hint-input" placeholder="Your hint message..."
+            class="flex-1 bg-space-700 border border-white/20 rounded-lg px-3 py-2 text-white text-sm
+                   focus:outline-none focus:border-yellow-400 transition">
+          <button onclick="sendHint({{ submission.team.id }})"
+            class="bg-yellow-700 hover:bg-yellow-600 text-white font-bold px-4 py-2 rounded-lg transition text-sm">
+            Send
+          </button>
+        </div>
+      </div>
+      {% else %}
+      <div class="glass rounded-2xl p-5 border border-white/10">
+        <div class="text-sm text-gray-400">
+          {% if submission.status.value == 'approved' %}
+          <span class="text-green-400 font-bold">✅ Approved</span> — {{ submission.points_awarded }} pts awarded
+          {% else %}
+          <span class="text-red-400 font-bold">❌ Rejected</span>
+          {% endif %}
+          {% if submission.tutor_comment %}
+          <div class="mt-2 text-gray-300 italic">{{ submission.tutor_comment }}</div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
+<script>
+const CODE = {{ submission.code | tojson }};
+
+require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs' } });
+require(['vs/editor/editor.main'], () => {
+  monaco.editor.create(document.getElementById('code-viewer'), {
+    value: CODE,
+    language: 'python',
+    theme: 'vs-dark',
+    readOnly: true,
+    fontSize: 13,
+    minimap: { enabled: false },
+    scrollBeyondLastLine: false,
+    automaticLayout: true,
+    fontFamily: '"Fira Code", monospace',
+    padding: { top: 12, bottom: 12 },
+  });
+});
+
+async function sendHint(teamId) {
+  const input = document.getElementById('hint-input');
+  const hint = input.value.trim();
+  if (!hint) return;
+  const form = new FormData();
+  form.append('hint_text', hint);
+  const resp = await fetch(`/tutor/hint/${teamId}`, { method: 'POST', body: form });
+  if (resp.ok) {
+    input.value = '';
+    showToast('💡 Hint sent!', 'success');
+  }
+}
+</script>
+{% endblock %}

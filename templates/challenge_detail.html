@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+{% block title %}{{ challenge.title }} — Space Mission{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-6" id="challenge-page">
+
+  <!-- Flash messages -->
+  {% set flash = request.query_params.get('flash') %}
+  {% if flash == 'submitted' %}
+  <div class="mb-4 bg-green-900/50 border border-green-500 rounded-xl p-4 flex items-center gap-3 text-green-300">
+    <span class="text-2xl">🚀</span>
+    <div>
+      <div class="font-bold">Solution submitted successfully!</div>
+      <div class="text-sm">Your code is under review by a tutor. Hang tight!</div>
+    </div>
+  </div>
+  {% elif flash == 'approved' %}
+  <div class="mb-4 bg-green-900/50 border border-green-500 rounded-xl p-4 flex items-center gap-3 text-green-300">
+    <span class="text-2xl">🚀</span>
+    <div>
+      <div class="font-bold">All tests passed — challenge complete!</div>
+      <div class="text-sm">Fuel and coins have been added to your team automatically.</div>
+    </div>
+  </div>
+  {% elif flash == 'already_approved' %}
+  <div class="mb-4 bg-yellow-900/50 border border-yellow-500 rounded-xl p-4 flex items-center gap-3 text-yellow-300">
+    <span class="text-2xl">✅</span>
+    <div class="font-bold">You've already solved this challenge!</div>
+  </div>
+  {% endif %}
+
+  {% if flash_error is defined and flash_error %}
+  <div class="mb-4 bg-red-900/50 border border-red-500 rounded-xl p-4 flex items-center gap-3 text-red-300">
+    <span class="text-2xl">⚠️</span>
+    <div class="font-bold">{{ flash_error }}</div>
+  </div>
+  {% endif %}
+
+  <!-- Breadcrumb -->
+  <div class="flex items-center gap-2 text-sm text-gray-500 mb-4">
+    <a href="/challenges" class="hover:text-gray-300 transition">🪐 Planets</a>
+    <span>›</span>
+    <span class="text-gray-300">{{ challenge.planet_name }}</span>
+    <span>›</span>
+    <span class="text-white">{{ challenge.title }}</span>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+
+    <!-- Left: Challenge description -->
+    <div class="space-y-4">
+
+      <!-- Header -->
+      <div class="glass rounded-2xl p-5 border
+                  {% if challenge.difficulty == 'easy' %}border-green-500/30
+                  {% elif challenge.difficulty == 'medium' %}border-yellow-500/30
+                  {% else %}border-red-500/30{% endif %}">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl
+                      {% if challenge.difficulty == 'easy' %}bg-green-900/50
+                      {% elif challenge.difficulty == 'medium' %}bg-yellow-900/50
+                      {% else %}bg-red-900/50{% endif %}">
+            🪐
+          </div>
+          <div>
+            <h1 class="text-2xl font-black text-white">{{ challenge.title }}</h1>
+            <div class="flex items-center gap-3 mt-1">
+              <span class="text-xs px-2 py-0.5 rounded-full font-bold
+                {% if challenge.difficulty == 'easy' %}bg-green-900/60 text-green-300
+                {% elif challenge.difficulty == 'medium' %}bg-yellow-900/60 text-yellow-300
+                {% else %}bg-red-900/60 text-red-300{% endif %}">
+                {{ challenge.difficulty | upper }}
+              </span>
+              <span class="text-yellow-300 font-bold text-sm">⚡ {{ challenge.points }} fuel</span>
+              <span class="text-gray-400 text-xs">{{ challenge.planet_name }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status banner if already approved -->
+      {% if already_approved %}
+      <div class="bg-green-900/40 border border-green-500/50 rounded-xl p-4 text-green-300 flex items-center gap-2">
+        <span class="text-2xl">✅</span>
+        <div>
+          <div class="font-bold">Planet Conquered!</div>
+          <div class="text-sm text-green-400">You've already solved this challenge.</div>
+        </div>
+      </div>
+      {% elif last_submission and last_submission.status.value == 'pending' %}
+      <div class="bg-yellow-900/40 border border-yellow-500/50 rounded-xl p-4 text-yellow-300 flex items-center gap-2">
+        <span class="text-2xl">⏳</span>
+        <div>
+          <div class="font-bold">Under Review</div>
+          <div class="text-sm">Your submission is being reviewed by a tutor.</div>
+        </div>
+      </div>
+      {% elif last_submission and last_submission.status.value == 'rejected' %}
+      <div class="bg-red-900/40 border border-red-500/50 rounded-xl p-4 text-red-300">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-2xl">❌</span>
+          <div class="font-bold">Needs Revision</div>
+        </div>
+        {% if last_submission.tutor_comment %}
+        <div class="text-sm bg-red-900/30 rounded-lg p-2 mt-1">
+          💬 {{ last_submission.tutor_comment }}
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <!-- Description -->
+      <div class="glass rounded-2xl p-5 border border-white/10">
+        <h3 class="font-bold text-indigo-300 mb-3 text-sm uppercase tracking-wide">📋 Mission Brief</h3>
+        <div class="text-gray-200 text-sm leading-relaxed whitespace-pre-wrap">{{ challenge.description }}</div>
+      </div>
+
+      <!-- Examples -->
+      {% if challenge.examples %}
+      <div class="glass rounded-2xl p-5 border border-white/10">
+        <h3 class="font-bold text-indigo-300 mb-3 text-sm uppercase tracking-wide">💡 Examples</h3>
+        <pre class="text-green-300 text-sm bg-space-800 rounded-xl p-4 overflow-x-auto">{{ challenge.examples }}</pre>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Right: Editor -->
+    <div class="flex flex-col gap-4">
+      <div class="glass rounded-2xl p-4 border border-indigo-500/30 flex-1 flex flex-col">
+
+        <!-- Editor toolbar -->
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+            <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+            <span class="text-xs text-gray-500 ml-2">solution.py</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="run-btn"
+              class="flex items-center gap-1.5 text-xs bg-green-700 hover:bg-green-600 disabled:opacity-50
+                     px-3 py-1.5 rounded-lg transition font-semibold">
+              ▶ Run
+            </button>
+          </div>
+        </div>
+
+        <!-- Monaco Editor -->
+        <div id="monaco-editor" style="height: 320px;"></div>
+
+        <!-- Run output -->
+        <div id="run-output" class="mt-3 hidden">
+          <!-- Summary bar -->
+          <div id="run-summary" class="hidden flex items-center justify-between rounded-xl px-4 py-2 mb-2 text-sm font-bold"></div>
+          <!-- Test case results -->
+          <div id="run-cases" class="space-y-2"></div>
+          <!-- Plain run output (no test cases) -->
+          <div id="run-plain" class="hidden bg-space-800 rounded-xl p-3 text-sm font-mono">
+            <div id="run-status" class="text-xs mb-2"></div>
+            <pre id="run-stdout" class="text-green-300 whitespace-pre-wrap"></pre>
+            <pre id="run-stderr" class="text-red-400 whitespace-pre-wrap mt-1"></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit form -->
+      <div class="glass rounded-2xl p-4 border border-white/10">
+        <form method="post" action="/submit" id="submit-form">
+          <input type="hidden" name="challenge_id" value="{{ challenge.id }}">
+          <input type="hidden" name="code" id="code-input" value="{{ (last_submission.code if last_submission else challenge.starter_code) or '' }}">
+
+          <div class="flex items-center justify-between gap-4">
+            <div id="submit-hint" class="text-sm text-gray-500">
+              {% if challenge.test_cases %}
+              Run your code first — all tests must pass to submit.
+              {% else %}
+              Ready to submit? Your code will be reviewed by a tutor.
+              {% endif %}
+            </div>
+            <button type="submit" id="submit-btn"
+              {% if already_approved or challenge.test_cases %}disabled{% endif %}
+              class="flex-shrink-0 flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600
+                     hover:from-indigo-500 hover:to-purple-500 disabled:opacity-40 disabled:cursor-not-allowed
+                     text-white font-bold py-2.5 px-6 rounded-xl transition-all active:scale-95 text-sm">
+              🚀 Submit Solution
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
+<script>
+const INITIAL_CODE = {{ (last_submission.code if last_submission else challenge.starter_code) | default('# Write your Python solution here\n\ndef solution():\n    pass\n') | tojson }};
+
+let monacoEditor = null;
+
+require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs' } });
+require(['vs/editor/editor.main'], function() {
+  monacoEditor = monaco.editor.create(document.getElementById('monaco-editor'), {
+    value: INITIAL_CODE,
+    language: 'python',
+    theme: 'vs-dark',
+    fontSize: 14,
+    minimap: { enabled: false },
+    scrollBeyondLastLine: false,
+    automaticLayout: true,
+    fontFamily: '"Fira Code", "Cascadia Code", monospace',
+    fontLigatures: true,
+    lineNumbers: 'on',
+    renderLineHighlight: 'all',
+    padding: { top: 12, bottom: 12 },
+  });
+});
+
+const CHALLENGE_ID = {{ challenge.id }};
+
+document.getElementById('run-btn').addEventListener('click', async function() {
+  if (!monacoEditor) return;
+
+  const btn = this;
+  btn.disabled = true;
+  btn.textContent = '⟳ Running...';
+
+  const output    = document.getElementById('run-output');
+  const summary   = document.getElementById('run-summary');
+  const casesEl   = document.getElementById('run-cases');
+  const plainEl   = document.getElementById('run-plain');
+  const stdout    = document.getElementById('run-stdout');
+  const stderr    = document.getElementById('run-stderr');
+  const statusEl  = document.getElementById('run-status');
+
+  output.classList.remove('hidden');
+  summary.classList.add('hidden');
+  casesEl.innerHTML = '';
+  plainEl.classList.add('hidden');
+  stdout.textContent = '';
+  stderr.textContent = '';
+
+  try {
+    const resp = await fetch('/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: monacoEditor.getValue(), challenge_id: CHALLENGE_ID }),
+    });
+    const ct = resp.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) {
+      plainEl.classList.remove('hidden');
+      stderr.textContent = 'Session expired. Please refresh the page and log in again.';
+    } else {
+      const data = await resp.json();
+
+      if (data.mode === 'tests') {
+        // ── Summary bar ──────────────────────────────────────────
+        summary.classList.remove('hidden');
+        const allOk = data.all_passed;
+        summary.className = `flex items-center justify-between rounded-xl px-4 py-2 mb-2 text-sm font-bold ${allOk ? 'bg-green-900/60 text-green-300' : 'bg-red-900/60 text-red-300'}`;
+        summary.innerHTML = `
+          <span>${allOk ? '🎉 All test cases passed!' : `❌ ${data.passed} / ${data.total} test cases passed`}</span>
+          <span class="text-xs font-normal opacity-70">${data.passed}/${data.total}</span>`;
+
+        // ── Unlock / lock submit button ───────────────────────────
+        const submitBtn  = document.getElementById('submit-btn');
+        const submitHint = document.getElementById('submit-hint');
+        if (submitBtn && !submitBtn.dataset.alreadyApproved) {
+          submitBtn.disabled = !allOk;
+          submitHint.textContent = allOk
+            ? '✅ All tests passed — ready to submit!'
+            : 'Fix the failing tests before submitting.';
+          submitHint.className = `text-sm ${allOk ? 'text-green-400' : 'text-red-400'}`;
+        }
+
+        // ── Per-case cards ────────────────────────────────────────
+        data.results.forEach(tc => {
+          const card = document.createElement('div');
+          const ok = tc.passed;
+          card.className = `rounded-xl border text-xs font-mono overflow-hidden ${ok ? 'border-green-500/40 bg-green-900/20' : 'border-red-500/40 bg-red-900/20'}`;
+
+          if (tc.is_hidden) {
+            card.innerHTML = `
+              <div class="flex items-center gap-2 px-3 py-2">
+                <span class="${ok ? 'text-green-400' : 'text-red-400'} font-bold text-sm">${ok ? '✓' : '✗'}</span>
+                <span class="text-gray-400">Hidden Test Case #${tc.id}</span>
+                ${tc.timed_out ? '<span class="text-yellow-400 ml-auto">⏱ Timed out</span>' : ''}
+              </div>`;
+          } else {
+            const input   = tc.stdin    ? `<div class="mb-1"><span class="text-gray-500">Call:</span>\n${escHtml(tc.stdin)}</div>` : '';
+            const exp     = `<div class="mb-1"><span class="text-gray-500">Expected:</span>\n<span class="text-green-300">${escHtml(tc.expected)}</span></div>`;
+            const got     = ok ? '' : `<div class="mb-1"><span class="text-gray-500">Got:</span>\n<span class="text-red-300">${escHtml(tc.actual || '')}</span></div>`;
+            const errLine = tc.stderr   ? `<div class="text-red-400 mt-1">${escHtml(tc.stderr)}</div>` : '';
+            const timeout = tc.timed_out ? '<div class="text-yellow-400">⏱ Time limit exceeded</div>' : '';
+
+            card.innerHTML = `
+              <div class="flex items-center gap-2 px-3 py-2 border-b ${ok ? 'border-green-500/20' : 'border-red-500/20'}">
+                <span class="${ok ? 'text-green-400' : 'text-red-400'} font-bold text-sm">${ok ? '✓' : '✗'}</span>
+                <span class="text-gray-300">Test Case #${tc.id}</span>
+              </div>
+              <pre class="px-3 py-2 text-gray-200 whitespace-pre-wrap leading-relaxed">${input}${exp}${got}${errLine}${timeout}</pre>`;
+          }
+          casesEl.appendChild(card);
+        });
+
+      } else {
+        // ── Plain run (no test cases configured) ─────────────────
+        plainEl.classList.remove('hidden');
+        stdout.textContent = data.stdout || '';
+        stderr.textContent = data.stderr || '';
+        if (data.timed_out) {
+          statusEl.innerHTML = '<span class="text-yellow-400 font-bold">⏱ Timed out</span>';
+        } else if (data.exit_code === 0) {
+          statusEl.innerHTML = '<span class="text-green-400 font-bold">✓ Finished</span>';
+        } else {
+          statusEl.innerHTML = '<span class="text-red-400 font-bold">✗ Error</span>';
+        }
+      }
+    }
+  } catch (err) {
+    plainEl.classList.remove('hidden');
+    stderr.textContent = 'Network error: ' + err.message;
+  }
+
+  btn.disabled = false;
+  btn.textContent = '▶ Run';
+});
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+document.getElementById('submit-form').addEventListener('submit', function() {
+  if (monacoEditor) {
+    document.getElementById('code-input').value = monacoEditor.getValue();
+  }
+});
+
+{% if already_approved %}
+document.getElementById('submit-btn').dataset.alreadyApproved = '1';
+{% endif %}
+</script>
+{% endblock %}

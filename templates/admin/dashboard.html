@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — Mission Control{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-8">
+
+  <div class="mb-8">
+    <h1 class="text-4xl font-black text-white">⚙️ Mission Control</h1>
+    <p class="text-gray-400 mt-1">Manage the competition from headquarters.</p>
+  </div>
+
+  <!-- Stats grid -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="glass rounded-2xl p-5 border border-blue-500/30">
+      <div class="text-3xl mb-2">👥</div>
+      <div class="text-3xl font-black text-blue-300">{{ stats.total_teams }}</div>
+      <div class="text-gray-400 text-sm mt-1">Teams Registered</div>
+    </div>
+    <div class="glass rounded-2xl p-5 border border-purple-500/30">
+      <div class="text-3xl mb-2">🪐</div>
+      <div class="text-3xl font-black text-purple-300">{{ stats.total_challenges }}</div>
+      <div class="text-gray-400 text-sm mt-1">Challenges</div>
+    </div>
+    <div class="glass rounded-2xl p-5 border border-yellow-500/30">
+      <div class="text-3xl mb-2">⏳</div>
+      <div class="text-3xl font-black text-yellow-300">{{ stats.pending_submissions }}</div>
+      <div class="text-gray-400 text-sm mt-1">Pending Reviews</div>
+      {% if stats.pending_submissions > 0 %}
+      <a href="/tutor/submissions" class="text-xs text-indigo-400 hover:text-indigo-300 mt-1 block">Review now →</a>
+      {% endif %}
+    </div>
+    <div class="glass rounded-2xl p-5 border border-green-500/30">
+      <div class="text-3xl mb-2">✅</div>
+      <div class="text-3xl font-black text-green-300">{{ stats.approved_submissions }}</div>
+      <div class="text-gray-400 text-sm mt-1">Approved Solutions</div>
+    </div>
+  </div>
+
+  <!-- Active event -->
+  {% if stats.active_event %}
+  <div class="mb-6 bg-gradient-to-r from-yellow-900/60 to-orange-900/60 border border-yellow-500/40 rounded-2xl p-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span class="text-3xl">⚡</span>
+      <div>
+        <div class="font-bold text-yellow-300">Active Event: {{ stats.active_event.title }}</div>
+        <div class="text-yellow-200/70 text-sm">{{ stats.active_event.description }}</div>
+      </div>
+    </div>
+    <form method="post" action="/admin/events/{{ stats.active_event.id }}/end">
+      <button type="submit" class="bg-red-700 hover:bg-red-600 text-white text-sm font-bold px-4 py-2 rounded-lg transition">
+        End Event
+      </button>
+    </form>
+  </div>
+  {% endif %}
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Award points -->
+    <div class="glass rounded-2xl p-6 border border-white/10">
+      <h3 class="font-bold text-white text-lg mb-4">🎁 Award Points</h3>
+      <form method="post" action="/admin/award_points" class="space-y-3">
+        <select name="team_id" required
+          class="w-full bg-space-700 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-400 transition">
+          <option value="">Select team...</option>
+          {% for team in teams %}
+          <option value="{{ team.id }}">{{ team.name }} ({{ team.score }} pts)</option>
+          {% endfor %}
+        </select>
+        <div class="flex gap-2">
+          <input type="number" name="points" placeholder="Points" required min="1"
+            class="flex-1 bg-space-700 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-400 transition">
+          <input type="text" name="reason" placeholder="Reason (optional)"
+            class="flex-1 bg-space-700 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-400 transition">
+        </div>
+        <button type="submit"
+          class="w-full bg-gradient-to-r from-green-700 to-teal-700 hover:from-green-600 hover:to-teal-600
+                 text-white font-bold py-3 rounded-xl transition active:scale-95">
+          ⚡ Award Points
+        </button>
+      </form>
+    </div>
+
+    <!-- Award coins -->
+    <div class="glass rounded-2xl p-6 border border-white/10">
+      <h3 class="font-bold text-white text-lg mb-4">🪙 Award Coins</h3>
+      <form method="post" action="/admin/award_coins" class="space-y-3">
+        <select name="team_id" required
+          class="w-full bg-space-700 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-400 transition">
+          <option value="">Select team...</option>
+          {% for team in teams %}
+          <option value="{{ team.id }}">{{ team.name }} ({{ team.coins }} coins)</option>
+          {% endfor %}
+        </select>
+        <input type="number" name="coins" placeholder="Coins to award" required min="1"
+          class="w-full bg-space-700 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-400 transition">
+        <button type="submit"
+          class="w-full bg-gradient-to-r from-amber-700 to-orange-700 hover:from-amber-600 hover:to-orange-600
+                 text-white font-bold py-3 rounded-xl transition active:scale-95">
+          🪙 Award Coins
+        </button>
+      </form>
+    </div>
+
+    <!-- Teams score table -->
+    <div class="lg:col-span-2 glass rounded-2xl p-6 border border-white/10">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-bold text-white text-lg">📊 Current Standings</h3>
+        <a href="/leaderboard" class="text-indigo-400 hover:text-indigo-300 text-sm transition">Full leaderboard →</a>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-gray-500 text-xs uppercase tracking-wide border-b border-white/10">
+              <th class="pb-2 text-left">#</th>
+              <th class="pb-2 text-left">Team</th>
+              <th class="pb-2 text-right">Score</th>
+              <th class="pb-2 text-right">Coins</th>
+              <th class="pb-2 text-right">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for team in teams %}
+            {% set loop_idx = loop.index %}
+            <tr class="border-b border-white/5 hover:bg-white/5 transition">
+              <td class="py-2 text-gray-400">{{ loop_idx }}</td>
+              <td class="py-2 font-semibold text-white">{{ team.name }}</td>
+              <td class="py-2 text-right font-bold text-yellow-300">{{ team.score }}</td>
+              <td class="py-2 text-right text-amber-300">{{ team.coins }}</td>
+              <td class="py-2 text-right">
+                {% if team.is_frozen %}
+                <span class="text-blue-400 text-xs">🥶 Frozen</span>
+                {% else %}
+                <span class="text-green-400 text-xs">✓ Active</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Danger zone -->
+    <div class="lg:col-span-2 glass rounded-2xl p-6 border border-red-500/20">
+      <h3 class="font-bold text-red-400 text-lg mb-4">⚠️ Danger Zone</h3>
+      <form method="post" action="/admin/reset"
+            onsubmit="return confirm('This will reset ALL scores and coins. Type RESET to confirm.')">
+        <div class="flex gap-3">
+          <input type="text" name="confirm" placeholder='Type "RESET" to confirm'
+            class="flex-1 bg-space-700 border border-red-500/30 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-400 transition">
+          <button type="submit"
+            class="bg-red-800 hover:bg-red-700 text-white font-bold px-6 py-3 rounded-xl transition active:scale-95">
+            Reset All Scores
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Fix enumerate for Jinja2
+</script>
+{% endblock %}

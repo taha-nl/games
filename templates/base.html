@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Space Mission{% endblock %} 🚀</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            'space': {
+              900: '#050810',
+              800: '#0a0e1a',
+              700: '#0f1629',
+              600: '#1a2040',
+              500: '#252d55',
+            },
+            'neon': {
+              green: '#00ff88',
+              blue: '#00d4ff',
+              purple: '#bf5fff',
+              orange: '#ff6b35',
+              pink: '#ff3d9a',
+            }
+          },
+          fontFamily: {
+            'space': ['"Exo 2"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+
+  <!-- Alpine.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <!-- HTMX -->
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/static/space.css">
+
+  <style>
+    body { font-family: 'Exo 2', sans-serif; background-color: #050810; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0a0e1a; }
+    ::-webkit-scrollbar-thumb { background: #252d55; border-radius: 3px; }
+  </style>
+</head>
+<body class="bg-space-900 text-white min-h-screen">
+
+<!-- Starfield -->
+<div class="stars" aria-hidden="true"></div>
+
+<!-- Event Banner -->
+<div id="event-banner" class="hidden fixed top-0 left-0 right-0 z-50 event-banner">
+  <div class="bg-gradient-to-r from-yellow-600 via-orange-500 to-red-500 text-white p-4 text-center shadow-2xl">
+    <div class="text-2xl font-black neon-text" id="event-title">🎉 EVENT</div>
+    <div class="text-sm mt-1" id="event-desc"></div>
+    <button onclick="document.getElementById('event-banner').classList.add('hidden')"
+            class="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white text-xl">✕</button>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+<!-- Navigation -->
+{% if team is defined and team %}
+<nav class="relative z-10 glass border-b border-white/10 px-6 py-3">
+  <div class="max-w-7xl mx-auto flex items-center justify-between">
+    <a href="/dashboard" class="flex items-center gap-3">
+      <span class="text-3xl rocket-float">🚀</span>
+      <div>
+        <div class="text-lg font-black text-white tracking-wide">SPACE MISSION</div>
+        <div class="text-xs text-neon-blue/80 tracking-widest uppercase">Coding Competition</div>
+      </div>
+    </a>
+
+    <div class="flex items-center gap-4">
+      <!-- Team score pill -->
+      <div class="glass rounded-full px-4 py-1.5 flex items-center gap-2">
+        <span class="text-yellow-400">⚡</span>
+        <span class="font-bold text-yellow-300" id="nav-score">{{ team.score }}</span>
+        <span class="text-gray-400 text-xs">fuel</span>
+      </div>
+      <!-- Coins pill -->
+      <div class="glass rounded-full px-4 py-1.5 flex items-center gap-2">
+        <span>🪙</span>
+        <span class="font-bold text-amber-300" id="nav-coins">{{ team.coins }}</span>
+      </div>
+
+      <div class="flex items-center gap-2 text-sm">
+        <a href="/dashboard" class="px-3 py-1.5 rounded-lg hover:bg-white/10 transition {% if request.url.path == '/dashboard' %}bg-white/10{% endif %}">Dashboard</a>
+        <a href="/challenges" class="px-3 py-1.5 rounded-lg hover:bg-white/10 transition {% if '/challenge' in request.url.path %}bg-white/10{% endif %}">🪐 Planets</a>
+        <a href="/leaderboard" class="px-3 py-1.5 rounded-lg hover:bg-white/10 transition {% if request.url.path == '/leaderboard' %}bg-white/10{% endif %}">🏆 Ranks</a>
+        <a href="/cards/shop" class="px-3 py-1.5 rounded-lg hover:bg-white/10 transition">🃏 Cards</a>
+        <a href="/quiz" class="px-3 py-1.5 rounded-lg hover:bg-white/10 transition font-semibold {% if '/quiz' in request.url.path %}bg-neon-purple/20 text-neon-purple{% else %}text-neon-purple/80{% endif %}">🧠 Quiz</a>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-sm">
+          {{ team.name[0].upper() }}
+        </div>
+        <span class="text-sm font-semibold">{{ team.name }}</span>
+        <a href="/logout" class="text-gray-400 hover:text-red-400 transition text-xs ml-2">Exit</a>
+      </div>
+    </div>
+  </div>
+</nav>
+{% elif tutor is defined and tutor %}
+<nav class="relative z-10 glass border-b border-white/10 px-6 py-3">
+  <div class="max-w-7xl mx-auto flex items-center justify-between">
+    <a href="/tutor/submissions" class="flex items-center gap-3">
+      <span class="text-3xl">🛸</span>
+      <div>
+        <div class="text-lg font-black text-white tracking-wide">MISSION CONTROL</div>
+        <div class="text-xs text-neon-purple/80 tracking-widest uppercase">
+          {% if tutor.role.value == 'admin' %}Admin{% else %}Tutor{% endif %} Panel
+        </div>
+      </div>
+    </a>
+    <div class="flex items-center gap-4 text-sm">
+      <a href="/tutor/submissions" class="px-3 py-1.5 rounded-lg hover:bg-white/10 transition">📋 Submissions</a>
+      {% if tutor.role.value == 'admin' %}
+      <a href="/admin" class="px-3 py-1.5 rounded-lg hover:bg-white/10 transition">⚙️ Admin</a>
+      <a href="/admin/teams" class="px-3 py-1.5 rounded-lg hover:bg-white/10 transition">👥 Teams</a>
+      <a href="/admin/challenges" class="px-3 py-1.5 rounded-lg hover:bg-white/10 transition">🪐 Challenges</a>
+      <a href="/admin/events" class="px-3 py-1.5 rounded-lg hover:bg-white/10 transition">⚡ Events</a>
+      <a href="/admin/quiz" class="px-3 py-1.5 rounded-lg hover:bg-white/10 transition {% if '/admin/quiz' in request.url.path %}bg-neon-purple/20 text-neon-purple{% endif %}">🧠 Quiz</a>
+      {% endif %}
+      <a href="/leaderboard" class="px-3 py-1.5 rounded-lg hover:bg-white/10 transition">🏆 Leaderboard</a>
+      <a href="/tutor/logout" class="text-red-400 hover:text-red-300 transition px-3 py-1.5">Exit</a>
+    </div>
+  </div>
+</nav>
+{% else %}
+<nav class="relative z-10 glass border-b border-white/10 px-6 py-3">
+  <div class="max-w-7xl mx-auto flex items-center gap-3">
+    <span class="text-3xl rocket-float">🚀</span>
+    <div>
+      <div class="text-lg font-black text-white tracking-wide">SPACE MISSION</div>
+      <div class="text-xs text-neon-blue/80 tracking-widest uppercase">Coding Competition</div>
+    </div>
+  </div>
+</nav>
+{% endif %}
+
+<!-- Main content -->
+<main class="relative z-10">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- Custom JS -->
+<script src="/static/app.js"></script>
+{% block scripts %}{% endblock %}
+
+</body>
+</html>

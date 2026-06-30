@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Events — Mission Control{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-6 py-8">
+
+  <div class="mb-8">
+    <h1 class="text-3xl font-black text-white">⚡ Event Control</h1>
+    <p class="text-gray-400 mt-1">Trigger global events that affect all teams in real-time.</p>
+  </div>
+
+  <!-- Quick event buttons -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+    {% set quick_events = [
+      ('🎉 Treasure Hunt', 'treasure_hunt', 1.0, 50, 'Bonus +50 points for everyone!'),
+      ('⚡ Speed Round', 'speed_round', 2.0, 0, 'Double points for all approvals!'),
+      ('🌩️ Lightning', 'lightning_challenge', 1.5, 0, '1.5x multiplier activated!'),
+      ('🎁 Global Bonus', 'global_bonus', 1.0, 25, '+25 bonus points for all teams!'),
+    ] %}
+    {% for label, etype, mult, bonus, desc in quick_events %}
+    <form method="post" action="/admin/create_event">
+      <input type="hidden" name="title" value="{{ label }}">
+      <input type="hidden" name="description" value="{{ desc }}">
+      <input type="hidden" name="event_type" value="{{ etype }}">
+      <input type="hidden" name="multiplier" value="{{ mult }}">
+      <input type="hidden" name="bonus_points" value="{{ bonus }}">
+      <button type="submit"
+        class="w-full glass border border-yellow-500/30 hover:border-yellow-400/60 hover:bg-yellow-900/20
+               text-white font-bold py-4 px-3 rounded-xl transition text-sm active:scale-95">
+        {{ label }}
+      </button>
+    </form>
+    {% endfor %}
+  </div>
+
+  <!-- Custom event form -->
+  <div class="glass rounded-2xl p-6 border border-indigo-500/30 mb-8">
+    <h3 class="font-bold text-indigo-300 text-lg mb-4">🎛️ Custom Event</h3>
+    <form method="post" action="/admin/create_event" class="space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block">Event Title *</label>
+          <input type="text" name="title" required placeholder="e.g. Meteor Shower Bonus"
+            class="w-full bg-space-700 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-400 transition">
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block">Event Type</label>
+          <select name="event_type"
+            class="w-full bg-space-700 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-400 transition">
+            <option value="treasure_hunt">Treasure Hunt</option>
+            <option value="speed_round">Speed Round</option>
+            <option value="lightning_challenge">Lightning Challenge</option>
+            <option value="global_bonus">Global Bonus</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block">Score Multiplier</label>
+          <input type="number" name="multiplier" value="1.0" step="0.1" min="1.0"
+            class="w-full bg-space-700 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-400 transition">
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 mb-1 block">Instant Bonus Points (all teams)</label>
+          <input type="number" name="bonus_points" value="0" min="0"
+            class="w-full bg-space-700 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-400 transition">
+        </div>
+      </div>
+      <div>
+        <label class="text-xs text-gray-400 mb-1 block">Description</label>
+        <input type="text" name="description" placeholder="Description shown to all teams"
+          class="w-full bg-space-700 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-400 transition">
+      </div>
+      <button type="submit"
+        class="w-full bg-gradient-to-r from-indigo-700 to-purple-700 hover:from-indigo-600 hover:to-purple-600
+               text-white font-bold py-3.5 rounded-xl transition active:scale-95 text-lg">
+        ⚡ Launch Event
+      </button>
+    </form>
+  </div>
+
+  <!-- Event history -->
+  <div class="glass rounded-2xl border border-white/10 overflow-hidden">
+    <div class="px-6 py-4 border-b border-white/10 font-bold text-white">Event History</div>
+    {% if events %}
+    <div class="divide-y divide-white/5">
+      {% for event in events %}
+      <div class="flex items-center justify-between px-6 py-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-white">{{ event.title }}</span>
+            {% if event.is_active %}
+            <span class="text-xs bg-green-900/60 text-green-300 px-2 py-0.5 rounded-full animate-pulse">ACTIVE</span>
+            {% endif %}
+          </div>
+          <div class="text-xs text-gray-500 mt-0.5">
+            {{ event.event_type }} · ×{{ event.multiplier }} multiplier · +{{ event.bonus_points }} bonus
+            · {{ event.started_at.strftime('%H:%M:%S') }}
+          </div>
+        </div>
+        {% if event.is_active %}
+        <form method="post" action="/admin/events/{{ event.id }}/end">
+          <button type="submit" class="bg-red-700 hover:bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">
+            End
+          </button>
+        </form>
+        {% else %}
+        <span class="text-gray-600 text-xs">Ended</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-10 text-gray-600">No events yet.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
