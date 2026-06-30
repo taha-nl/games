@@ -66,6 +66,7 @@ class Challenge(Base):
     coins_reward = Column(Integer, default=10, nullable=False)
     examples = Column(Text, nullable=True)
     starter_code = Column(Text, nullable=True)
+    challenge_type = Column(String(16), default="code", nullable=False, server_default="code")
     is_active = Column(Boolean, default=True)
     order_index = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)

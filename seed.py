@@ -7,9 +7,10 @@ def seed_if_empty():
     db = SessionLocal()
     try:
         if db.query(Team).count() > 0:
-            # Seed quiz questions even if teams already exist (new feature)
             if db.query(QuizQuestion).count() == 0:
                 _seed_quiz(db)
+            if db.query(Challenge).filter(Challenge.challenge_type == "riddle").count() == 0:
+                _seed_riddles(db)
             return
         _seed(db)
     finally:
@@ -457,7 +458,8 @@ def _seed(db):
 
     db.commit()
     _seed_quiz(db)
-    print("✅ Database seeded with demo teams, challenges, cards, and quiz questions.")
+    _seed_riddles(db)
+    print("✅ Database seeded with demo teams, challenges, cards, quiz questions, and riddles.")
 
 
 def _seed_quiz(db):
@@ -700,6 +702,379 @@ def _seed_quiz(db):
         db.add(q)
     db.commit()
     print(f"✅ Seeded {len(questions)} quiz questions.")
+
+
+def _seed_riddles(db):
+    riddles = [
+        Challenge(
+            title="The Three Switches",
+            planet_name="Logic Station Alpha",
+            challenge_type="riddle",
+            difficulty="medium",
+            points=200,
+            coins_reward=20,
+            order_index=100,
+            description=(
+                "You are outside a closed room. Outside the room are three switches. "
+                "Inside the room is one light bulb.\n\n"
+                "Only one switch controls the bulb. You may turn the switches on or off as much as you want, "
+                "but you may enter the room only once.\n\n"
+                "How can you identify the correct switch?"
+            ),
+            examples="",
+            starter_code=(
+                "Turn on switch 1 for several minutes, then turn it off. "
+                "Turn on switch 2. Enter the room.\n"
+                "- If the bulb is ON → switch 2.\n"
+                "- If the bulb is OFF but WARM → switch 1.\n"
+                "- If the bulb is OFF and COLD → switch 3."
+            ),
+        ),
+        Challenge(
+            title="The Two Doors",
+            planet_name="Planet Paradox",
+            challenge_type="riddle",
+            difficulty="medium",
+            points=175,
+            coins_reward=18,
+            order_index=101,
+            description=(
+                "You stand before two doors. One leads to safety, the other to danger.\n\n"
+                "A guard stands beside each door. One guard always tells the truth; "
+                "the other always lies.\n\n"
+                "You may ask only ONE question to ONE guard.\n\n"
+                "What do you ask to find the safe door?"
+            ),
+            examples="",
+            starter_code=(
+                'Ask either guard: "Which door would the OTHER guard say leads to safety?"\n\n'
+                "Then choose the OPPOSITE door.\n\n"
+                "Why it works: the truth-teller tells you what the liar would say (wrong door). "
+                "The liar lies about what the truth-teller would say (also the wrong door). "
+                "Both always point to the wrong door, so you pick the opposite."
+            ),
+        ),
+        Challenge(
+            title="The Farmer's Problem",
+            planet_name="Crossroads Nebula",
+            challenge_type="riddle",
+            difficulty="hard",
+            points=300,
+            coins_reward=30,
+            order_index=102,
+            description=(
+                "A farmer must cross a river with a wolf, a goat, and a basket of cabbage. "
+                "The boat can carry only the farmer and ONE item.\n\n"
+                "Rules:\n"
+                "- The wolf cannot be left alone with the goat.\n"
+                "- The goat cannot be left alone with the cabbage.\n\n"
+                "How can the farmer get everything safely across?"
+            ),
+            examples="",
+            starter_code=(
+                "1. Take the GOAT across → return alone.\n"
+                "2. Take the WOLF across → bring the GOAT back.\n"
+                "3. Take the CABBAGE across → return alone.\n"
+                "4. Take the GOAT across.\n\n"
+                "Done! Wolf and cabbage are never alone with the goat."
+            ),
+        ),
+        Challenge(
+            title="The Heavy Ball",
+            planet_name="Gravity Core",
+            challenge_type="riddle",
+            difficulty="medium",
+            points=200,
+            coins_reward=20,
+            order_index=103,
+            description=(
+                "You have 9 identical-looking balls. One ball is heavier than the others.\n\n"
+                "You have a balance scale and may use it only TWICE.\n\n"
+                "How do you find the heavier ball?"
+            ),
+            examples="",
+            starter_code=(
+                "Weigh 1: Put 3 balls on each side.\n"
+                "- If one side is heavier → the heavy ball is in that group.\n"
+                "- If balanced → the heavy ball is in the remaining group of 3.\n\n"
+                "Weigh 2: From the identified group of 3, put 1 on each side, leave 1 off.\n"
+                "- One side heavier → that's the heavy ball.\n"
+                "- Balanced → the ball left off the scale is the heavy one."
+            ),
+        ),
+        Challenge(
+            title="The Wrong Labels",
+            planet_name="Mislabel Moon",
+            challenge_type="riddle",
+            difficulty="medium",
+            points=225,
+            coins_reward=23,
+            order_index=104,
+            description=(
+                "There are three boxes:\n"
+                "- One contains only apples.\n"
+                "- One contains only oranges.\n"
+                "- One contains both apples and oranges.\n\n"
+                "ALL THREE labels are wrong.\n\n"
+                "You may take ONE fruit from ONE box (without looking inside first).\n\n"
+                "How can you correctly label all three boxes?"
+            ),
+            examples="",
+            starter_code=(
+                "Take a fruit from the box labelled 'Apples & Oranges'.\n\n"
+                "Since every label is wrong, this box CANNOT be mixed.\n"
+                "- If you draw an apple → this box is Apples only.\n"
+                "- If you draw an orange → this box is Oranges only.\n\n"
+                "Now the remaining two labels are also wrong, so you can deduce the rest by elimination."
+            ),
+        ),
+        Challenge(
+            title="The Missing Dollar",
+            planet_name="Planet Illusia",
+            challenge_type="riddle",
+            difficulty="easy",
+            points=125,
+            coins_reward=13,
+            order_index=105,
+            description=(
+                "Three friends pay $30 for a hotel room ($10 each).\n"
+                "The hotel realizes the room costs only $25. An employee returns $5 but keeps $2, "
+                "giving each friend $1 back.\n\n"
+                "Each friend now paid $9 → together $27. The employee kept $2.\n\n"
+                "$27 + $2 = $29.\n\n"
+                "Where is the missing dollar?"
+            ),
+            examples="",
+            starter_code=(
+                "There is NO missing dollar. The puzzle uses misleading arithmetic.\n\n"
+                "The friends paid $27 total:\n"
+                "  $25 went to the hotel + $2 kept by the employee = $27. ✓\n\n"
+                "You should NOT add the employee's $2 to the $27 — the $2 is already included in $27. "
+                "Adding them together is the trick that creates the illusion of a missing dollar."
+            ),
+        ),
+        Challenge(
+            title="The Family",
+            planet_name="Family Cluster",
+            challenge_type="riddle",
+            difficulty="easy",
+            points=100,
+            coins_reward=10,
+            order_index=106,
+            description=(
+                "A family has two parents and six sons.\n"
+                "Each son has one sister.\n\n"
+                "How many people are in the family?"
+            ),
+            examples="",
+            starter_code=(
+                "9 people.\n\n"
+                "2 parents + 6 sons + 1 sister = 9.\n\n"
+                "The key: 'each son has ONE sister' — they all share the SAME sister, "
+                "not one sister each."
+            ),
+        ),
+        Challenge(
+            title="The Clock",
+            planet_name="Timekeepers World",
+            challenge_type="riddle",
+            difficulty="easy",
+            points=125,
+            coins_reward=13,
+            order_index=107,
+            description=(
+                "A clock strikes 6 times in 5 seconds.\n\n"
+                "How long will it take to strike 12 times?"
+            ),
+            examples="",
+            starter_code=(
+                "11 seconds.\n\n"
+                "6 strikes = 5 intervals between them → each interval = 1 second.\n"
+                "12 strikes = 11 intervals → 11 seconds.\n\n"
+                "The common wrong answer is 10 seconds (just doubling 5), "
+                "which forgets that you count the GAPS between strikes, not the strikes themselves."
+            ),
+        ),
+        Challenge(
+            title="The Water Jugs",
+            planet_name="Measurement Rift",
+            challenge_type="riddle",
+            difficulty="medium",
+            points=200,
+            coins_reward=20,
+            order_index=108,
+            description=(
+                "You have:\n"
+                "- A 5-litre jug\n"
+                "- A 3-litre jug\n\n"
+                "Neither jug has measurement markings.\n\n"
+                "How can you measure exactly 4 litres of water?"
+            ),
+            examples="",
+            starter_code=(
+                "1. Fill the 5L jug.\n"
+                "2. Pour from 5L into 3L until 3L is full → 2L remain in 5L jug.\n"
+                "3. Empty the 3L jug.\n"
+                "4. Pour the 2L into the 3L jug.\n"
+                "5. Fill the 5L jug again.\n"
+                "6. Pour from 5L into 3L until 3L is full (needs 1L more).\n"
+                "7. Exactly 4L remain in the 5L jug. ✓"
+            ),
+        ),
+        Challenge(
+            title="The Bridge at Night",
+            planet_name="Dark Bridge Sector",
+            challenge_type="riddle",
+            difficulty="hard",
+            points=300,
+            coins_reward=30,
+            order_index=109,
+            description=(
+                "Four people must cross a bridge at night. They have ONE flashlight. "
+                "Only TWO people can cross at once.\n\n"
+                "Crossing times:\n"
+                "- Person A: 1 minute\n"
+                "- Person B: 2 minutes\n"
+                "- Person C: 7 minutes\n"
+                "- Person D: 10 minutes\n\n"
+                "When two people cross together, they move at the slower person's speed.\n\n"
+                "Can everyone cross in exactly 17 minutes? If so, how?"
+            ),
+            examples="",
+            starter_code=(
+                "Yes! Total: 17 minutes.\n\n"
+                "1. A + B cross → 2 min. (A returns with flashlight → 1 min)\n"
+                "2. C + D cross → 10 min. (B returns with flashlight → 2 min)\n"
+                "3. A + B cross → 2 min.\n\n"
+                "Total: 2 + 1 + 10 + 2 + 2 = 17 minutes ✓"
+            ),
+        ),
+        Challenge(
+            title="The Prisoner's Hats",
+            planet_name="Logic Nebula Prime",
+            challenge_type="riddle",
+            difficulty="hard",
+            points=350,
+            coins_reward=35,
+            order_index=110,
+            description=(
+                "Three people stand in a line. Each wears a black or white hat.\n\n"
+                "- The person at the BACK sees the two ahead.\n"
+                "- The person in the MIDDLE sees the person in front.\n"
+                "- The person in FRONT sees nobody.\n\n"
+                "They know at least one hat is white.\n\n"
+                "The person at the back says: 'I don't know my hat colour.'\n"
+                "The person in the middle says: 'I don't know either.'\n"
+                "The person in front says: 'I know my hat colour.'\n\n"
+                "What colour is the front person's hat — and how do they know?"
+            ),
+            examples="",
+            starter_code=(
+                "The front person's hat is WHITE.\n\n"
+                "Reasoning:\n"
+                "- Back person sees two hats. They say 'I don't know' → they do NOT see two black hats "
+                "(that would mean theirs is white). So at least one of the front two is white.\n"
+                "- Middle person hears this and sees the front person's hat. They still say 'I don't know' "
+                "→ the front person's hat is NOT black (if it were, the middle person would know theirs is white). "
+                "So the front person's hat must be white.\n"
+                "- The front person follows this logic and concludes: WHITE."
+            ),
+        ),
+        Challenge(
+            title="The Burning Ropes",
+            planet_name="Time Warp Zone",
+            challenge_type="riddle",
+            difficulty="hard",
+            points=325,
+            coins_reward=33,
+            order_index=111,
+            description=(
+                "You have two ropes. Each rope takes exactly ONE HOUR to burn completely.\n\n"
+                "They burn UNEVENLY — half a rope does not necessarily take 30 minutes.\n\n"
+                "Using only the ropes and a lighter, how can you measure exactly 45 minutes?"
+            ),
+            examples="",
+            starter_code=(
+                "1. At time 0: Light BOTH ends of rope 1, and ONE end of rope 2.\n"
+                "2. Rope 1 burns from both ends → it finishes in exactly 30 minutes.\n"
+                "3. At the 30-minute mark: Light the OTHER end of rope 2.\n"
+                "4. Rope 2 had 30 minutes of burn left. Burning from both ends halves the time → 15 more minutes.\n"
+                "5. Rope 2 finishes at the 45-minute mark. ✓"
+            ),
+        ),
+        Challenge(
+            title="The Elevator",
+            planet_name="Common Sense Station",
+            challenge_type="riddle",
+            difficulty="easy",
+            points=125,
+            coins_reward=13,
+            order_index=112,
+            description=(
+                "A short man lives on the 10th floor of a building.\n\n"
+                "Every morning, he takes the elevator DOWN to the ground floor.\n\n"
+                "When he returns, he takes the elevator to the 7th floor and walks up three floors.\n\n"
+                "However, on rainy days, he takes the elevator directly to the 10th floor.\n\n"
+                "Why?"
+            ),
+            examples="",
+            starter_code=(
+                "He is too short to reach the button for floor 10.\n\n"
+                "He can only reach up to the button for floor 7.\n\n"
+                "On rainy days, he uses his UMBRELLA to press the floor 10 button."
+            ),
+        ),
+        Challenge(
+            title="The Portrait",
+            planet_name="Family Tree Rim",
+            challenge_type="riddle",
+            difficulty="easy",
+            points=100,
+            coins_reward=10,
+            order_index=113,
+            description=(
+                "A man looks at a portrait and says:\n\n"
+                '"Brothers and sisters, I have none. '
+                'But this man\'s father is my father\'s son."\n\n'
+                "Who is in the portrait?"
+            ),
+            examples="",
+            starter_code=(
+                "His SON.\n\n"
+                "'My father's son' = the man himself (he has no brothers).\n"
+                "So 'this man's father is ME'.\n"
+                "Therefore, the person in the portrait is HIS SON."
+            ),
+        ),
+        Challenge(
+            title="The Sequence",
+            planet_name="Number Sequence Realm",
+            challenge_type="riddle",
+            difficulty="medium",
+            points=175,
+            coins_reward=18,
+            order_index=114,
+            description=(
+                "What number comes next in this sequence?\n\n"
+                "1, 11, 21, 1211, 111221, ___\n\n"
+                "Explain your reasoning."
+            ),
+            examples="",
+            starter_code=(
+                "312211\n\n"
+                "This is the 'Look and Say' sequence — each number describes the previous one:\n"
+                "1        → one 1              → '11'\n"
+                "11       → two 1s             → '21'\n"
+                "21       → one 2, one 1       → '1211'\n"
+                "1211     → one 1, one 2, two 1s → '111221'\n"
+                "111221   → three 1s, two 2s, one 1 → '312211'"
+            ),
+        ),
+    ]
+    for r in riddles:
+        db.add(r)
+    db.commit()
+    print(f"✅ Seeded {len(riddles)} logic riddles.")
 
 
 if __name__ == "__main__":

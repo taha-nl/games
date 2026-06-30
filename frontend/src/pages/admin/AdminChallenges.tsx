@@ -11,13 +11,13 @@ interface Challenge {
 
 export default function AdminChallenges() {
   const qc = useQueryClient()
-  const [form, setForm] = useState({ title: '', planet_name: '', difficulty: 'easy', points: '100', description: '', examples: '', starter_code: '', coins_reward: '10' })
+  const [form, setForm] = useState({ title: '', planet_name: '', difficulty: 'easy', points: '100', description: '', examples: '', starter_code: '', coins_reward: '10', challenge_type: 'code' })
 
   const { data } = useQuery<{ challenges: Challenge[] }>({ queryKey: ['admin-challenges'], queryFn: () => api.get('/admin/challenges') })
 
   const create = useMutation({
     mutationFn: () => api.post('/admin/challenges', form),
-    onSuccess: () => { toast.success('Challenge created!'); setForm({ title: '', planet_name: '', difficulty: 'easy', points: '100', description: '', examples: '', starter_code: '', coins_reward: '10' }); qc.invalidateQueries({ queryKey: ['admin-challenges'] }) },
+    onSuccess: () => { toast.success('Challenge created!'); setForm({ title: '', planet_name: '', difficulty: 'easy', points: '100', description: '', examples: '', starter_code: '', coins_reward: '10', challenge_type: 'code' }); qc.invalidateQueries({ queryKey: ['admin-challenges'] }) },
     onError: (e: Error) => toast.error(e instanceof ApiError ? e.message : e.message),
   })
 
@@ -44,6 +44,13 @@ export default function AdminChallenges() {
               <input value={form.title} onChange={f('title')} placeholder="Title" className={inputClass} />
               <input value={form.planet_name} onChange={f('planet_name')} placeholder="Planet name" className={inputClass} />
               <div className="grid grid-cols-2 gap-2">
+                <select value={form.challenge_type} onChange={f('challenge_type')} className={inputClass}>
+                  <option value="code">💻 Code</option>
+                  <option value="riddle">🧩 Riddle</option>
+                </select>
+                <input type="number" value={form.coins_reward} onChange={f('coins_reward')} placeholder="Coin reward" className={inputClass} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
                 <select value={form.difficulty} onChange={f('difficulty')} className={inputClass}>
                   <option value="easy">Easy</option>
                   <option value="medium">Medium</option>
@@ -51,10 +58,9 @@ export default function AdminChallenges() {
                 </select>
                 <input type="number" value={form.points} onChange={f('points')} placeholder="Points" className={inputClass} />
               </div>
-              <input type="number" value={form.coins_reward} onChange={f('coins_reward')} placeholder="Coin reward" className={inputClass} />
               <textarea value={form.description} onChange={f('description')} placeholder="Description..." rows={4} className={`${inputClass} resize-none`} />
               <textarea value={form.examples} onChange={f('examples')} placeholder="Examples (optional)" rows={2} className={`${inputClass} resize-none`} />
-              <textarea value={form.starter_code} onChange={f('starter_code')} placeholder="Starter code (optional)" rows={3} className={`${inputClass} resize-none font-mono text-xs`} />
+              <textarea value={form.starter_code} onChange={f('starter_code')} placeholder={form.challenge_type === 'riddle' ? 'Answer key (shown to tutors only)' : 'Starter code (optional)'} rows={3} className={`${inputClass} resize-none font-mono text-xs`} />
               <button onClick={() => create.mutate()} disabled={!form.title || !form.description || create.isPending}
                 className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl transition disabled:opacity-50">
                 Create Challenge

@@ -36,6 +36,17 @@ templates.env.globals["enumerate"] = enumerate
 @app.on_event("startup")
 async def startup():
     Base.metadata.create_all(bind=engine)
+    # Lightweight migrations for columns added after initial deploy
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        for stmt in [
+            "ALTER TABLE challenges ADD COLUMN challenge_type VARCHAR(16) NOT NULL DEFAULT 'code'",
+        ]:
+            try:
+                conn.execute(text(stmt))
+                conn.commit()
+            except Exception:
+                pass  # column already exists
     from seed import seed_if_empty
     seed_if_empty()
     print("\n🚀 Space Mission Platform ready!")

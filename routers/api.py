@@ -61,6 +61,7 @@ def _challenge_dict(c: Challenge) -> dict:
         "difficulty": c.difficulty,
         "points": c.points,
         "coins_reward": c.coins_reward,
+        "challenge_type": c.challenge_type or "code",
         "examples": c.examples,
         "starter_code": c.starter_code,
         "is_active": c.is_active,
@@ -643,7 +644,10 @@ async def api_tutor_submission_detail(
     s = db.query(Submission).filter(Submission.id == submission_id).first()
     if not s:
         raise HTTPException(status_code=404)
-    return {"submission": _submission_dict(s)}
+    return {
+        "submission": _submission_dict(s),
+        "challenge": _challenge_dict(s.challenge) if s.challenge else None,
+    }
 
 
 @router.post("/tutor/submissions/{submission_id}/approve")
@@ -844,6 +848,7 @@ async def api_admin_create_challenge(
     examples: str = Form(""),
     starter_code: str = Form(""),
     coins_reward: int = Form(10),
+    challenge_type: str = Form("code"),
     admin=Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -851,7 +856,8 @@ async def api_admin_create_challenge(
     c = Challenge(
         title=title, planet_name=planet_name, difficulty=difficulty,
         points=points, description=description, examples=examples,
-        starter_code=starter_code, coins_reward=coins_reward, order_index=max_order,
+        starter_code=starter_code, coins_reward=coins_reward,
+        challenge_type=challenge_type, order_index=max_order,
     )
     db.add(c)
     db.commit()

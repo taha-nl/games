@@ -9,7 +9,7 @@ interface TestCase { id: number; stdin: string; expected_output: string; is_hidd
 interface Challenge {
   id: number; title: string; planet_name: string; description: string
   difficulty: string; points: number; examples: string; starter_code: string
-  test_cases: TestCase[]
+  challenge_type: 'code' | 'riddle'; test_cases: TestCase[]
 }
 interface DetailData {
   challenge: Challenge
@@ -166,38 +166,66 @@ export default function ChallengeDetail() {
           )}
         </div>
 
-        {/* Right: editor */}
+        {/* Right: editor or riddle answer box */}
         <div className="flex flex-col gap-4">
-          <div className="monaco-container flex-1" style={{ minHeight: '400px' }}>
-            <Editor
-              height="450px"
-              language="python"
-              theme="vs-dark"
-              value={initialCode}
-              onChange={v => setCode(v ?? '')}
-              onMount={e => { editorRef.current = e }}
-              options={{ fontSize: 14, minimap: { enabled: false }, scrollBeyondLastLine: false, fontLigatures: true }}
-            />
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={handleRun}
-              disabled={running}
-              className="flex-1 bg-space-600 hover:bg-space-500 border border-white/10 text-white font-bold py-3 rounded-xl transition disabled:opacity-50"
-            >
-              {running ? '⏳ Running...' : '▶ Run Tests'}
-            </button>
-            <button
-              onClick={() => submit.mutate()}
-              disabled={submit.isPending || (!allPassed && (challenge.test_cases?.length ?? 0) > 0) || already_approved}
-              className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold py-3 rounded-xl transition disabled:opacity-50"
-            >
-              {submit.isPending ? '🚀 Submitting...' : '🚀 Submit'}
-            </button>
-          </div>
-          {!allPassed && (challenge.test_cases?.length ?? 0) > 0 && !already_approved && (
-            <p className="text-center text-gray-500 text-xs">Run tests and pass all to enable submission</p>
+          {challenge.challenge_type === 'riddle' ? (
+            <>
+              <div className="glass rounded-2xl p-5 border border-neon-purple/20">
+                <h3 className="font-bold text-white mb-2">🧠 Your Answer</h3>
+                <p className="text-gray-400 text-xs mb-3">Explain your reasoning clearly. A tutor will review your answer.</p>
+                <textarea
+                  value={code ?? ''}
+                  onChange={e => setCode(e.target.value)}
+                  rows={14}
+                  placeholder="Write your answer and reasoning here…"
+                  disabled={already_approved}
+                  className="w-full bg-space-700 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-neon-purple/40 resize-none font-sans leading-relaxed disabled:opacity-60"
+                />
+              </div>
+              <button
+                onClick={() => submit.mutate()}
+                disabled={submit.isPending || !code?.trim() || already_approved}
+                className="w-full bg-gradient-to-r from-neon-purple/80 to-indigo-600 hover:from-neon-purple hover:to-indigo-500 text-white font-bold py-3 rounded-xl transition disabled:opacity-50"
+              >
+                {submit.isPending ? '🚀 Submitting...' : '🚀 Submit Answer'}
+              </button>
+              {!already_approved && (
+                <p className="text-center text-gray-500 text-xs">Your answer will be reviewed by a tutor</p>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="monaco-container flex-1" style={{ minHeight: '400px' }}>
+                <Editor
+                  height="450px"
+                  language="python"
+                  theme="vs-dark"
+                  value={initialCode}
+                  onChange={v => setCode(v ?? '')}
+                  onMount={e => { editorRef.current = e }}
+                  options={{ fontSize: 14, minimap: { enabled: false }, scrollBeyondLastLine: false, fontLigatures: true }}
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleRun}
+                  disabled={running}
+                  className="flex-1 bg-space-600 hover:bg-space-500 border border-white/10 text-white font-bold py-3 rounded-xl transition disabled:opacity-50"
+                >
+                  {running ? '⏳ Running...' : '▶ Run Tests'}
+                </button>
+                <button
+                  onClick={() => submit.mutate()}
+                  disabled={submit.isPending || (!allPassed && (challenge.test_cases?.length ?? 0) > 0) || already_approved}
+                  className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold py-3 rounded-xl transition disabled:opacity-50"
+                >
+                  {submit.isPending ? '🚀 Submitting...' : '🚀 Submit'}
+                </button>
+              </div>
+              {!allPassed && (challenge.test_cases?.length ?? 0) > 0 && !already_approved && (
+                <p className="text-center text-gray-500 text-xs">Run tests and pass all to enable submission</p>
+              )}
+            </>
           )}
         </div>
       </div>

@@ -11,7 +11,10 @@ interface Submission {
   submitted_at: string; points_awarded: number | null; tutor_comment: string | null
   double_points_active: boolean
 }
-interface DetailData { submission: Submission }
+interface ChallengeInfo {
+  challenge_type: string; starter_code: string; title: string
+}
+interface DetailData { submission: Submission; challenge: ChallengeInfo | null }
 
 export default function SubmissionDetail() {
   const { id } = useParams<{ id: string }>()
@@ -48,8 +51,9 @@ export default function SubmissionDetail() {
     return <div className="flex items-center justify-center min-h-[60vh]"><div className="text-neon-blue animate-pulse">Loading...</div></div>
   }
 
-  const { submission: s } = data
+  const { submission: s, challenge } = data
   const isPending = s.status === 'pending'
+  const isRiddle = challenge?.challenge_type === 'riddle'
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
@@ -58,13 +62,13 @@ export default function SubmissionDetail() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Code viewer */}
-        <div className="lg:col-span-2">
+        {/* Answer / Code viewer */}
+        <div className="lg:col-span-2 space-y-4">
           <div className="glass rounded-2xl border border-white/10 overflow-hidden">
             <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
               <div>
                 <h2 className="font-bold text-white">{s.team_name}</h2>
-                <p className="text-gray-400 text-sm">{s.challenge_title}</p>
+                <p className="text-gray-400 text-sm">{s.challenge_title} {isRiddle && <span className="ml-1 text-neon-purple">🧩 Riddle</span>}</p>
               </div>
               <div className="text-right">
                 <div className={`text-xs px-2 py-0.5 rounded-full font-semibold border capitalize inline-block ${s.status === 'pending' ? 'bg-yellow-900/50 text-yellow-300 border-yellow-500/30' : s.status === 'approved' ? 'bg-green-900/50 text-green-300 border-green-500/30' : 'bg-red-900/50 text-red-300 border-red-500/30'}`}>
@@ -75,14 +79,35 @@ export default function SubmissionDetail() {
                 )}
               </div>
             </div>
-            <Editor
-              height="500px"
-              language="python"
-              theme="vs-dark"
-              value={s.code}
-              options={{ readOnly: true, fontSize: 13, minimap: { enabled: false }, scrollBeyondLastLine: false }}
-            />
+
+            {isRiddle ? (
+              <div className="p-5">
+                <p className="text-xs text-gray-400 mb-2 uppercase tracking-wide">Team's Answer</p>
+                <div className="bg-space-700/50 rounded-xl p-4 text-gray-200 text-sm leading-relaxed whitespace-pre-wrap">{s.code}</div>
+              </div>
+            ) : (
+              <Editor
+                height="500px"
+                language="python"
+                theme="vs-dark"
+                value={s.code}
+                options={{ readOnly: true, fontSize: 13, minimap: { enabled: false }, scrollBeyondLastLine: false }}
+              />
+            )}
           </div>
+
+          {/* Answer key for riddles */}
+          {isRiddle && challenge?.starter_code && (
+            <div className="glass rounded-2xl border border-neon-purple/20 overflow-hidden">
+              <div className="px-5 py-3 border-b border-neon-purple/20 flex items-center gap-2">
+                <span>🔑</span>
+                <span className="font-bold text-neon-purple text-sm">Answer Key</span>
+              </div>
+              <div className="p-5">
+                <pre className="text-green-300 text-sm leading-relaxed whitespace-pre-wrap font-sans">{challenge.starter_code}</pre>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Review panel */}
