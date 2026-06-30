@@ -1,9 +1,10 @@
 import json as _json
+import os
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from jinja2 import Environment
 from starlette.middleware.sessions import SessionMiddleware
 
 from database import engine, Base
@@ -12,6 +13,15 @@ import models  # noqa: F401 — registers all models with Base
 app = FastAPI(title="Space Mission — Coding Competition")
 
 app.add_middleware(SessionMiddleware, secret_key="space-mission-secret-2024-bootcamp")
+
+# Allow Vite dev server during development
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -35,10 +45,11 @@ async def startup():
     print("   → Admin:       admin / admin123\n")
 
 
-from routers import teams, challenges, leaderboard, cards, admin, tutor, runner, quiz  # noqa: E402
+from routers import teams, challenges, leaderboard, cards, admin, tutor, runner, quiz, api  # noqa: E402
 
 quiz._init_templates(templates)
 
+app.include_router(api.router)       # JSON API for React frontend (must be first)
 app.include_router(teams.router)
 app.include_router(challenges.router)
 app.include_router(leaderboard.router)
@@ -47,3 +58,7 @@ app.include_router(admin.router)
 app.include_router(tutor.router)
 app.include_router(runner.router)
 app.include_router(quiz.router)
+
+# Serve built React SPA — must come after all API routers
+if os.path.exists("frontend/dist"):
+    app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="spa")
