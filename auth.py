@@ -28,6 +28,44 @@ def get_current_team(request: Request, db: Session = Depends(get_db)) -> Team:
     return team
 
 
+def api_require_team(request: Request, db: Session = Depends(get_db)) -> Team:
+    """API-safe version: returns 401 JSON instead of a 302 redirect."""
+    team_id = request.session.get("team_id")
+    if not team_id:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        request.session.clear()
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return team
+
+
+def api_require_tutor(request: Request, db: Session = Depends(get_db)) -> TutorAccount:
+    """API-safe version: returns 401 JSON instead of a 302 redirect."""
+    tutor_id = request.session.get("tutor_id")
+    if not tutor_id:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    tutor = db.query(TutorAccount).filter(TutorAccount.id == tutor_id).first()
+    if not tutor:
+        request.session.clear()
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return tutor
+
+
+def api_require_admin(request: Request, db: Session = Depends(get_db)) -> TutorAccount:
+    """API-safe admin check: returns 401/403 JSON."""
+    tutor_id = request.session.get("tutor_id")
+    if not tutor_id:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    tutor = db.query(TutorAccount).filter(TutorAccount.id == tutor_id).first()
+    if not tutor:
+        request.session.clear()
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if tutor.role.value != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return tutor
+
+
 def get_current_team_optional(request: Request, db: Session = Depends(get_db)):
     team_id = request.session.get("team_id")
     if not team_id:

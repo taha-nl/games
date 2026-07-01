@@ -10,10 +10,10 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from auth import (
-    get_current_team,
-    get_current_tutor,
+    api_require_admin,
+    api_require_team,
+    api_require_tutor,
     hash_password,
-    require_admin,
     verify_password,
 )
 from database import get_db, SessionLocal
@@ -201,7 +201,7 @@ async def api_tutor_logout(request: Request):
 @router.get("/dashboard")
 async def api_dashboard(
     request: Request,
-    team: Team = Depends(get_current_team),
+    team: Team = Depends(api_require_team),
     db: Session = Depends(get_db),
 ):
     if team.is_frozen and team.frozen_until and team.frozen_until < datetime.utcnow():
@@ -270,7 +270,7 @@ async def api_dashboard(
 @router.get("/challenges")
 async def api_challenges(
     request: Request,
-    team: Team = Depends(get_current_team),
+    team: Team = Depends(api_require_team),
     db: Session = Depends(get_db),
 ):
     challenges = (
@@ -302,7 +302,7 @@ async def api_challenges(
 async def api_challenge_detail(
     challenge_id: int,
     request: Request,
-    team: Team = Depends(get_current_team),
+    team: Team = Depends(api_require_team),
     db: Session = Depends(get_db),
 ):
     challenge = db.query(Challenge).filter(Challenge.id == challenge_id, Challenge.is_active == True).first()
@@ -346,7 +346,7 @@ async def api_submit(
     request: Request,
     challenge_id: int = Form(...),
     code: str = Form(...),
-    team: Team = Depends(get_current_team),
+    team: Team = Depends(api_require_team),
     db: Session = Depends(get_db),
 ):
     if team.is_frozen and team.frozen_until and team.frozen_until > datetime.utcnow():
@@ -426,7 +426,7 @@ async def api_leaderboard(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/cards/shop")
 async def api_card_shop(
-    team: Team = Depends(get_current_team),
+    team: Team = Depends(api_require_team),
     db: Session = Depends(get_db),
 ):
     cards = db.query(Card).all()
@@ -451,7 +451,7 @@ async def api_card_shop(
 @router.post("/cards/buy/{card_id}")
 async def api_buy_card(
     card_id: int,
-    team: Team = Depends(get_current_team),
+    team: Team = Depends(api_require_team),
     db: Session = Depends(get_db),
 ):
     card = db.query(Card).filter(Card.id == card_id).first()
@@ -475,7 +475,7 @@ async def api_buy_card(
 async def api_use_card(
     team_card_id: int,
     target_team_id: int = Form(None),
-    team: Team = Depends(get_current_team),
+    team: Team = Depends(api_require_team),
     db: Session = Depends(get_db),
 ):
     team_card = db.query(TeamCard).filter(TeamCard.id == team_card_id, TeamCard.team_id == team.id).first()
@@ -523,7 +523,7 @@ async def api_use_card(
 @router.get("/quiz")
 async def api_quiz_home(
     request: Request,
-    team: Team = Depends(get_current_team),
+    team: Team = Depends(api_require_team),
     db: Session = Depends(get_db),
 ):
     questions = (
@@ -558,7 +558,7 @@ async def api_quiz_home(
 async def api_quiz_question(
     question_id: int,
     request: Request,
-    team: Team = Depends(get_current_team),
+    team: Team = Depends(api_require_team),
     db: Session = Depends(get_db),
 ):
     q = db.query(QuizQuestion).filter(QuizQuestion.id == question_id, QuizQuestion.is_active == True).first()
@@ -585,7 +585,7 @@ async def api_quiz_answer(
     question_id: int,
     request: Request,
     answer: str = Form(...),
-    team: Team = Depends(get_current_team),
+    team: Team = Depends(api_require_team),
     db: Session = Depends(get_db),
 ):
     q = db.query(QuizQuestion).filter(QuizQuestion.id == question_id, QuizQuestion.is_active == True).first()
@@ -621,7 +621,7 @@ async def api_quiz_answer(
 @router.get("/tutor/submissions")
 async def api_tutor_submissions(
     status_filter: str = "pending",
-    tutor: TutorAccount = Depends(get_current_tutor),
+    tutor: TutorAccount = Depends(api_require_tutor),
     db: Session = Depends(get_db),
 ):
     query = db.query(Submission)
@@ -638,7 +638,7 @@ async def api_tutor_submissions(
 @router.get("/tutor/submissions/{submission_id}")
 async def api_tutor_submission_detail(
     submission_id: int,
-    tutor: TutorAccount = Depends(get_current_tutor),
+    tutor: TutorAccount = Depends(api_require_tutor),
     db: Session = Depends(get_db),
 ):
     s = db.query(Submission).filter(Submission.id == submission_id).first()
@@ -655,7 +655,7 @@ async def api_approve_submission(
     submission_id: int,
     comment: str = Form(""),
     bonus_points: int = Form(0),
-    tutor: TutorAccount = Depends(get_current_tutor),
+    tutor: TutorAccount = Depends(api_require_tutor),
     db: Session = Depends(get_db),
 ):
     s = db.query(Submission).filter(Submission.id == submission_id).first()
@@ -697,7 +697,7 @@ async def api_approve_submission(
 async def api_reject_submission(
     submission_id: int,
     comment: str = Form(""),
-    tutor: TutorAccount = Depends(get_current_tutor),
+    tutor: TutorAccount = Depends(api_require_tutor),
     db: Session = Depends(get_db),
 ):
     s = db.query(Submission).filter(Submission.id == submission_id).first()
@@ -721,7 +721,7 @@ async def api_reject_submission(
 async def api_send_hint(
     team_id: int,
     hint_text: str = Form(...),
-    tutor: TutorAccount = Depends(get_current_tutor),
+    tutor: TutorAccount = Depends(api_require_tutor),
     db: Session = Depends(get_db),
 ):
     team = db.query(Team).filter(Team.id == team_id).first()
@@ -734,7 +734,7 @@ async def api_send_hint(
 # ─── admin ─────────────────────────────────────────────────────────────────
 
 @router.get("/admin/stats")
-async def api_admin_stats(admin=Depends(require_admin), db: Session = Depends(get_db)):
+async def api_admin_stats(admin=Depends(api_require_admin), db: Session = Depends(get_db)):
     active_event = db.query(Event).filter(Event.is_active == True).first()
     return {
         "total_teams": db.query(Team).count(),
@@ -746,7 +746,7 @@ async def api_admin_stats(admin=Depends(require_admin), db: Session = Depends(ge
 
 
 @router.get("/admin/teams")
-async def api_admin_teams(admin=Depends(require_admin), db: Session = Depends(get_db)):
+async def api_admin_teams(admin=Depends(api_require_admin), db: Session = Depends(get_db)):
     teams = db.query(Team).order_by(Team.score.desc()).all()
     return {"teams": [_team_dict(t) for t in teams]}
 
@@ -755,7 +755,7 @@ async def api_admin_teams(admin=Depends(require_admin), db: Session = Depends(ge
 async def api_admin_create_team(
     team_name: str = Form(...),
     password: str = Form(...),
-    admin=Depends(require_admin),
+    admin=Depends(api_require_admin),
     db: Session = Depends(get_db),
 ):
     existing = db.query(Team).filter(Team.name == team_name).first()
@@ -771,7 +771,7 @@ async def api_admin_create_team(
 @router.delete("/admin/teams/{team_id}")
 async def api_admin_delete_team(
     team_id: int,
-    admin=Depends(require_admin),
+    admin=Depends(api_require_admin),
     db: Session = Depends(get_db),
 ):
     team = db.query(Team).filter(Team.id == team_id).first()
@@ -786,7 +786,7 @@ async def api_admin_delete_team(
 async def api_award_points(
     team_id: int = Form(...),
     points: int = Form(...),
-    admin=Depends(require_admin),
+    admin=Depends(api_require_admin),
     db: Session = Depends(get_db),
 ):
     team = db.query(Team).filter(Team.id == team_id).first()
@@ -802,7 +802,7 @@ async def api_award_points(
 async def api_award_coins(
     team_id: int = Form(...),
     coins: int = Form(...),
-    admin=Depends(require_admin),
+    admin=Depends(api_require_admin),
     db: Session = Depends(get_db),
 ):
     team = db.query(Team).filter(Team.id == team_id).first()
@@ -816,7 +816,7 @@ async def api_award_coins(
 @router.post("/admin/reset")
 async def api_admin_reset(
     confirm: str = Form(...),
-    admin=Depends(require_admin),
+    admin=Depends(api_require_admin),
     db: Session = Depends(get_db),
 ):
     if confirm != "RESET":
@@ -828,7 +828,7 @@ async def api_admin_reset(
 
 
 @router.get("/admin/challenges")
-async def api_admin_challenges(admin=Depends(require_admin), db: Session = Depends(get_db)):
+async def api_admin_challenges(admin=Depends(api_require_admin), db: Session = Depends(get_db)):
     challenges = db.query(Challenge).order_by(Challenge.order_index).all()
     result = []
     for c in challenges:
@@ -849,7 +849,7 @@ async def api_admin_create_challenge(
     starter_code: str = Form(""),
     coins_reward: int = Form(10),
     challenge_type: str = Form("code"),
-    admin=Depends(require_admin),
+    admin=Depends(api_require_admin),
     db: Session = Depends(get_db),
 ):
     max_order = db.query(Challenge).count()
@@ -868,7 +868,7 @@ async def api_admin_create_challenge(
 @router.post("/admin/challenges/{challenge_id}/toggle")
 async def api_admin_toggle_challenge(
     challenge_id: int,
-    admin=Depends(require_admin),
+    admin=Depends(api_require_admin),
     db: Session = Depends(get_db),
 ):
     c = db.query(Challenge).filter(Challenge.id == challenge_id).first()
@@ -882,7 +882,7 @@ async def api_admin_toggle_challenge(
 @router.get("/admin/challenges/{challenge_id}/test-cases")
 async def api_admin_test_cases(
     challenge_id: int,
-    admin=Depends(require_admin),
+    admin=Depends(api_require_admin),
     db: Session = Depends(get_db),
 ):
     c = db.query(Challenge).filter(Challenge.id == challenge_id).first()
@@ -903,7 +903,7 @@ async def api_admin_add_test_case(
     stdin: str = Form(...),
     expected_output: str = Form(...),
     is_hidden: bool = Form(False),
-    admin=Depends(require_admin),
+    admin=Depends(api_require_admin),
     db: Session = Depends(get_db),
 ):
     c = db.query(Challenge).filter(Challenge.id == challenge_id).first()
@@ -920,7 +920,7 @@ async def api_admin_add_test_case(
 async def api_admin_delete_test_case(
     challenge_id: int,
     tc_id: int,
-    admin=Depends(require_admin),
+    admin=Depends(api_require_admin),
     db: Session = Depends(get_db),
 ):
     tc = db.query(TestCase).filter(TestCase.id == tc_id, TestCase.challenge_id == challenge_id).first()
@@ -932,7 +932,7 @@ async def api_admin_delete_test_case(
 
 
 @router.get("/admin/events")
-async def api_admin_events(admin=Depends(require_admin), db: Session = Depends(get_db)):
+async def api_admin_events(admin=Depends(api_require_admin), db: Session = Depends(get_db)):
     events = db.query(Event).order_by(Event.started_at.desc()).all()
     return {"events": [_event_dict(e) for e in events]}
 
@@ -944,7 +944,7 @@ async def api_admin_create_event(
     multiplier: float = Form(1.0),
     bonus_points: int = Form(0),
     description: str = Form(""),
-    admin=Depends(require_admin),
+    admin=Depends(api_require_admin),
     db: Session = Depends(get_db),
 ):
     # Deactivate current events
@@ -971,7 +971,7 @@ async def api_admin_create_event(
 @router.post("/admin/events/{event_id}/end")
 async def api_admin_end_event(
     event_id: int,
-    admin=Depends(require_admin),
+    admin=Depends(api_require_admin),
     db: Session = Depends(get_db),
 ):
     event = db.query(Event).filter(Event.id == event_id).first()
@@ -984,7 +984,7 @@ async def api_admin_end_event(
 
 
 @router.get("/admin/quiz")
-async def api_admin_quiz(admin=Depends(require_admin), db: Session = Depends(get_db)):
+async def api_admin_quiz(admin=Depends(api_require_admin), db: Session = Depends(get_db)):
     questions = db.query(QuizQuestion).order_by(QuizQuestion.order_index).all()
     return {"questions": [_question_dict(q) for q in questions]}
 
@@ -1001,7 +1001,7 @@ async def api_admin_create_question(
     points: int = Form(10),
     explanation: str = Form(""),
     joke_hint: str = Form(""),
-    admin=Depends(require_admin),
+    admin=Depends(api_require_admin),
     db: Session = Depends(get_db),
 ):
     max_order = db.query(QuizQuestion).count()
@@ -1029,7 +1029,7 @@ async def api_admin_edit_question(
     points: int = Form(10),
     explanation: str = Form(""),
     joke_hint: str = Form(""),
-    admin=Depends(require_admin),
+    admin=Depends(api_require_admin),
     db: Session = Depends(get_db),
 ):
     q = db.query(QuizQuestion).filter(QuizQuestion.id == question_id).first()
@@ -1045,7 +1045,7 @@ async def api_admin_edit_question(
 @router.post("/admin/quiz/{question_id}/toggle")
 async def api_admin_toggle_question(
     question_id: int,
-    admin=Depends(require_admin),
+    admin=Depends(api_require_admin),
     db: Session = Depends(get_db),
 ):
     q = db.query(QuizQuestion).filter(QuizQuestion.id == question_id).first()
@@ -1059,7 +1059,7 @@ async def api_admin_toggle_question(
 @router.delete("/admin/quiz/{question_id}")
 async def api_admin_delete_question(
     question_id: int,
-    admin=Depends(require_admin),
+    admin=Depends(api_require_admin),
     db: Session = Depends(get_db),
 ):
     q = db.query(QuizQuestion).filter(QuizQuestion.id == question_id).first()
@@ -1075,7 +1075,7 @@ async def api_admin_create_tutor(
     username: str = Form(...),
     password: str = Form(...),
     role: str = Form("tutor"),
-    admin=Depends(require_admin),
+    admin=Depends(api_require_admin),
     db: Session = Depends(get_db),
 ):
     existing = db.query(TutorAccount).filter(TutorAccount.username == username).first()

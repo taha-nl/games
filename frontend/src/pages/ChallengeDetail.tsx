@@ -35,10 +35,18 @@ export default function ChallengeDetail() {
   const editorRef = useRef<unknown>(null)
   const codeInitialized = useRef(false)
 
-  const { data, isLoading } = useQuery<DetailData>({
+  const { data, isLoading, isError } = useQuery<DetailData>({
     queryKey: ['challenge', id],
     queryFn: () => api.get(`/challenges/${id}`),
   })
+
+  // Reset code editor when navigating to a different challenge
+  useEffect(() => {
+    codeInitialized.current = false
+    setCode(undefined)
+    setRunResult(null)
+    setAllPassed(false)
+  }, [id])
 
   useEffect(() => {
     if (data && !codeInitialized.current) {
@@ -72,8 +80,19 @@ export default function ChallengeDetail() {
     }
   }
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return <div className="flex items-center justify-center min-h-[60vh]"><div className="text-neon-blue animate-pulse">🪐 Loading challenge...</div></div>
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <div className="text-5xl">⚠️</div>
+        <p className="text-red-400 font-bold text-lg">Failed to load challenge</p>
+        <p className="text-gray-500 text-sm">Make sure the backend server is running and try refreshing.</p>
+        <Link to="/challenges" className="text-neon-blue hover:underline text-sm">← Back to Planets</Link>
+      </div>
+    )
   }
 
   const { challenge, already_approved, active_event, last_submission } = data
